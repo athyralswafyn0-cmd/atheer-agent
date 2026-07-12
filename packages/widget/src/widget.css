@@ -1,0 +1,112 @@
+/* AI Customer Assistant Widget Styles */
+
+.ai-assistant-toggle {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-assistant-window {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.message {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-assistant-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-assistant-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-assistant-messages::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.ai-assistant-messages::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.ai-assistant-input textarea:focus {
+  border-color: var(--primary-color, #2563eb) !important;
+}
+
+.ai-assistant-input button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-assistant-lead-form input:focus {
+  border-color: var(--primary-color, #2563eb) !important;
+}
+
+/* RTL support for Arabic */
+[dir="rtl"] .ai-assistant-window {
+  direction: rtl;
+}
+
+[dir="rtl"] .ai-assistant-input textarea {
+  text-align: right;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .ai-assistant-window {
+    width: calc(100vw - 40px) !important;
+    height: calc(100vh - 40px) !important;
+    border-radius: 12px !important;
+    max-width: none;
+    max-height: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ai-assistant-window {
+    border-width: 2px;
+  }
+  .message {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ai-assistant-window,
+  .message,
+  .ai-assistant-toggle {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .ai-assistant-widget {
+    display: none !important;
+  }
+}

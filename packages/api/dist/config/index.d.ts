@@ -1,0 +1,29 @@
+import 'dotenv/config';
+export declare const config: {
+    NODE_ENV: string;
+    PORT: number;
+    HOST: string;
+    DATABASE_URL: string;
+    JWT_SECRET: string;
+    JWT_EXPIRES_IN: string;
+    CORS_ORIGINS: string;
+    RATE_LIMIT_MAX: number;
+    RATE_LIMIT_WINDOW: string;
+    OPENAI_API_KEY: string;
+    OPENAI_MODEL: string;
+    OPENAI_EMBEDDING_MODEL: string;
+    REDIS_URL: string;
+    EMAIL_HOST: string;
+    EMAIL_PORT: number;
+    EMAIL_USER: string;
+    EMAIL_PASS: string;
+    EMAIL_FROM: string;
+    S3_ENDPOINT: string;
+    S3_BUCKET: string;
+    S3_ACCESS_KEY: string;
+    S3_SECRET_KEY: string;
+    S3_REGION: string;
+    FRONTEND_URL: string;
+    WIDGET_CDN_URL: string;
+};
+//# sourceMappingURL=index.d.ts.map

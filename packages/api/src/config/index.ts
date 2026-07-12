@@ -1,0 +1,39 @@
+import 'dotenv/config';
+
+export const config = {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: parseInt(process.env.PORT || '3001', 10),
+  HOST: process.env.HOST || '0.0.0.0',
+
+  DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/ai_assistant',
+
+  JWT_SECRET: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+
+  CORS_ORIGINS: process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5173',
+
+  RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+  RATE_LIMIT_WINDOW: process.env.RATE_LIMIT_WINDOW || '1 minute',
+
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+  OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+  OPENAI_EMBEDDING_MODEL: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-ada-002',
+
+  REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+
+  EMAIL_HOST: process.env.EMAIL_HOST || '',
+  EMAIL_PORT: parseInt(process.env.EMAIL_PORT || '587', 10),
+  EMAIL_USER: process.env.EMAIL_USER || '',
+  EMAIL_PASS: process.env.EMAIL_PASS || '',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@aiassistant.com',
+
+  S3_ENDPOINT: process.env.S3_ENDPOINT || '',
+  S3_BUCKET: process.env.S3_BUCKET || '',
+  S3_ACCESS_KEY: process.env.S3_ACCESS_KEY || '',
+  S3_SECRET_KEY: process.env.S3_SECRET_KEY || '',
+  S3_REGION: process.env.S3_REGION || 'us-east-1',
+
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+
+  WIDGET_CDN_URL: process.env.WIDGET_CDN_URL || 'http://localhost:3001/widget',
+};

@@ -1,0 +1,8 @@
+{
+  "build": {
+    "command": "cd dashboard && npm install && npm run build"
+  },
+  "start": {
+    "command": "cd dashboard && npm start"
+  }
+}
