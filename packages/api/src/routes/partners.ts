@@ -121,16 +121,34 @@ export const partnersRoutes: FastifyPluginAsync = async (app) => {
       };
     }
 
+    // Find the user's organization and its partners
+    const org = await app.prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      include: { partners: { select: { id: true } } },
+    });
+
+    const partnerIds = org?.partners.map(p => p.id) || [];
+    if (partnerIds.length === 0) {
+      return {
+        totalOrganizations: 0,
+        totalBots: 0,
+        totalConversations: 0,
+        totalMessages: 0,
+        totalLeads: 0,
+      };
+    }
+
+    // Find organizations associated with these partners
     const orgs = await app.prisma.organization.findMany({
-          where: {
-            partners: {
-              some: {
-                id: user.organizationId
-              }
-            }
-          },
-          select: { id: true, name: true, slug: true, plan: true, createdAt: true }
-        });
+      where: {
+        partners: {
+          some: {
+            id: { in: partnerIds }
+          }
+        }
+      },
+      select: { id: true }
+    });
     const orgIds = orgs.map(o => o.id);
 
     const [totalBots, totalConversations, totalMessages, totalLeads] = await Promise.all([
