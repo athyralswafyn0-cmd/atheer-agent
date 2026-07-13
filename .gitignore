@@ -1,1 +1,55 @@
+# dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# build outputs
+dist/
+build/
+*.log
+
+# environment files - NEVER COMMIT
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# API specific
+packages/api/dist/
+packages/api/node_modules/
+packages/api/.env*
+
+# Dashboard specific
+dashboard/.next/
+dashboard/out/
+dashboard/build/
+dashboard/node_modules/
+dashboard/.env*
+dashboard/tsconfig.tsbuildinfo
+
+# Widget specific
+packages/widget/dist/
+packages/widget/node_modules/
+packages/widget/.env*
+
+# pnpm
+pnpm-debug.log*
+
+# test/coverage
+coverage/
+.nyc_output/
+
+# misc
+*.pem
+.vercel
+.turbo
