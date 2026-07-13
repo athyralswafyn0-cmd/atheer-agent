@@ -8,11 +8,14 @@ dist/
 build/
 *.log
 
-# environment files - NEVER COMMIT
+# environment files - NEVER COMMIT actual env files
 .env
 .env.local
 .env.production
 .env.*.local
+
+# but allow example files
+!.env.example
 
 # IDE
 .vscode/
@@ -27,20 +30,29 @@ Thumbs.db
 # API specific
 packages/api/dist/
 packages/api/node_modules/
-packages/api/.env*
+packages/api/.env
+packages/api/.env.local
+packages/api/.env.production
+packages/api/.env.*.local
 
 # Dashboard specific
 dashboard/.next/
 dashboard/out/
 dashboard/build/
 dashboard/node_modules/
-dashboard/.env*
+dashboard/.env
+dashboard/.env.local
+dashboard/.env.production
+dashboard/.env.*.local
 dashboard/tsconfig.tsbuildinfo
 
 # Widget specific
 packages/widget/dist/
 packages/widget/node_modules/
-packages/widget/.env*
+packages/widget/.env
+packages/widget/.env.local
+packages/widget/.env.production
+packages/widget/.env.*.local
 
 # pnpm
 pnpm-debug.log*
