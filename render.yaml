@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: atheer-agent-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: |
+      cd packages/api && npm ci && npm run build
+    startCommand: |
+      cd packages/api && npx prisma generate && PORT=10000 npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: HOST
+        value: "0.0.0.0"
+      - fromDatabase:
+          name: atheer-db
+          property: connectionString
+        key: DATABASE_URL
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: "gpt-4o"
+      - key: OPENAI_EMBEDDING_MODEL
+        value: "text-embedding-3-small"
+      - key: REDIS_URL
+        value: ""
+      - key: FRONTEND_URL
+        value: "https://www.atheersolutions.online"
+      - key: WIDGET_CDN_URL
+        value: "https://www.atheersolutions.online/widget"
+      - key: CORS_ORIGINS
+        value: "https://www.atheersolutions.online,https://atheersolutions.online"
+    healthCheckPath: /health
+    autoDeploy: true
+
+databases:
+  - name: atheer-db
+    databaseName: atheer_agent
+    user: atheer_user
+    plan: free
+    region: frankfurt
