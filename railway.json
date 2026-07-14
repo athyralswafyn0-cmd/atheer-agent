@@ -1,6 +1,6 @@
 {
   "build": {
-    "command": "cd packages/api && npm install && npm run build"
+    "command": "cd packages/api && npm ci && npm run build"
   },
   "start": {
     "command": "cd packages/api && npx prisma generate && PORT=8080 npm start"
