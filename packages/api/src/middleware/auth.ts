@@ -37,16 +37,19 @@ export const authMiddleware = (app: FastifyInstance) => {
       
       const user = await app.prisma!.user.findUnique({
         where: { id: decoded.userId },
-        select: { id: true, email: true, name: true, role: true, organizationId: true },
+        select: { id: true, email: true, name: true, role: true, organizationMembers: { take: 1, select: { organizationId: true } } },
       });
 
       if (!user) {
         return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'User not found' });
       }
 
+      const organizationId = user.organizationMembers[0]?.organizationId ?? null;
+      
       request.user = {
+        id: user.id,
         userId: user.id,
-        organizationId: user.organizationId,
+        organizationId,
         role: user.role,
       };
     } catch (err) {

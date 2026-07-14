@@ -18,7 +18,6 @@ model User {
   lastLoginAt          DateTime?
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
-  organizationId       String?
   isActive             Boolean             @default(true)
   passwordResetExpires DateTime?
   passwordResetToken   String?             @unique
@@ -27,12 +26,10 @@ model User {
   apiKeys              ApiKey[]
   bots                 Bot[]               @relation("BotOwner")
   notifications        Notification[]
-  organizationMembers  OrganizationMember?
+  organizationMembers  OrganizationMember[]
   sessions             Session[]
-  organization         Organization?       @relation("UserOrganization", fields: [organizationId], references: [id])
 
   @@index([email])
-  @@index([organizationId])
 }
 
 model Account {
@@ -70,39 +67,40 @@ model VerificationToken {
 }
 
 model Organization {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  domain      String?  @unique
-  logo        String?
-  description String?
-  industry    String?
-  size        String?   // "1-10", "11-50", "51-200", "201-500", "500+"
-  website     String?
-  email       String?
-  phone       String?
-  address     String?
-  city        String?
-  country     String?
-  status      String    @default("active")
-  plan        String    @default("starter")
-  settings    Json      @default("{}")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  licenseId   String?   @unique
-  partners    Partner[] @relation("OrganizationPartners")
+  id            String               @id @default(cuid())
+  name          String
+  slug          String               @unique
+  domain        String?              @unique
+  logo          String?
+  description   String?
+  industry      String?
+  size          String?
+  website       String?
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  country       String?
+  status        String               @default("active")
+  plan          String               @default("starter")
+  settings      Json                 @default("{}")
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  licenseId     String?              @unique
+  partnerId     String?
   activities    Activity[]
   apiKeys       ApiKey[]
   bots          Bot[]
   brand         Brand?               @relation("BrandOrganization")
+  conversations Conversation[]
   integrations  Integration[]
+  invitations   Invitation[]
   leads         Lead[]               @relation("OrganizationLeads")
   notifications Notification[]
   license       License?             @relation("LicenseOrganization", fields: [licenseId], references: [id])
   members       OrganizationMember[]
   usage         Usage[]
-  users         User[]               @relation("UserOrganization")
-  conversations Conversation[]
+  partners      Partner[]            @relation("OrganizationPartners")
 
   @@index([slug])
   @@index([domain])
@@ -111,14 +109,31 @@ model Organization {
 
 model OrganizationMember {
   id             String       @id @default(cuid())
-  userId         String       @unique
+  userId         String
   organizationId String
   role           UserRole     @default(MEMBER)
   joinedAt       DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, organizationId])
   @@index([organizationId])
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  email          String
+  role           UserRole
+  organizationId String
+  invitedBy      String
+  token          String       @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([email, organizationId])
+  @@index([token])
 }
 
 model Bot {
@@ -165,6 +180,7 @@ model Bot {
   embedScripts         EmbedScript?
   knowledgeBases       KnowledgeBase[]
   leads                Lead[]
+  trainingJobs         TrainingJob[]
 
   @@index([organizationId])
   @@index([status])
@@ -203,6 +219,26 @@ model KnowledgeChunk {
 
   @@index([knowledgeBaseId])
   @@index([chunkIndex])
+}
+
+model TrainingJob {
+  id              String    @id @default(cuid())
+  botId           String
+  status          String    @default("pending")
+  progress        Int       @default(0)
+  totalChunks     Int       @default(0)
+  processedChunks Int       @default(0)
+  error           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  metadata        Json      @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  bot             Bot       @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([botId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Conversation {

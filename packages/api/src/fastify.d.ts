@@ -46,6 +46,17 @@ declare module 'fastify' {
       verify: (token: string, options?: any) => any;
     };
 
+    // Module registry - Modular Monolith (Stage 2)
+    modules: {
+      auth: import('./modules/auth').AuthModuleInterface;
+      tenant: import('./modules/tenant').TenantModuleInterface;
+      partner: import('./modules/partner').PartnerModuleInterface;
+      bot: import('./modules/bot').BotModuleInterface;
+      conversation?: import('./modules/conversation').ConversationModuleInterface;
+      ai?: import('./modules/ai').AIModuleInterface;
+      eventBus?: import('./modules/event-bus').EventBusInterface;
+    };
+
     // Auth utilities - explicit signatures
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     validateBotAccess: (botId: string, organizationId: string) => Promise<void>;
@@ -62,6 +73,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     // User is explicitly added via decorator - never default
     user?: {
+      id: string;
       userId: string;
       organizationId: string | null;
       role: string;
