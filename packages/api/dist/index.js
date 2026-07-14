@@ -57,6 +57,89 @@ await initializeModules(app);
 // Register routes
 app.register(healthRoutes);
 app.register(partnersRoutes);
+// Root route - API info page
+app.get('/', async (_request, reply) => {
+    return reply.type('text/html').send(`
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atheer Agent AI - API Server</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 600px;
+    }
+    .logo { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; }
+    .subtitle { color: #94a3b8; font-size: 1.25rem; margin-bottom: 2rem; }
+    .status { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 9999px; padding: 0.75rem 1.5rem; margin-bottom: 2rem; }
+    .status-dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .status-text { font-weight: 600; color: #22c55e; }
+    .endpoints { text-align: right; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 12px; padding: 1.5rem; margin-top: 2rem; }
+    .endpoint { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+    .endpoint:last-child { border-bottom: none; }
+    .endpoint-method { background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: white; }
+    .endpoint-path { font-family: 'SF Mono', 'Fira Code', monospace; color: #94a3b8; }
+    .footer { margin-top: 2rem; color: #64748b; font-size: 0.875rem; }
+    .version { color: #3b82f6; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">Atheer Agent AI</div>
+    <p class="subtitle">API Server - Modular Monolith (Stage 2)</p>
+    <div class="status">
+      <span class="status-dot"></span>
+      <span class="status-text">الخادم يعمل بنجاح ✓</span>
+    </div>
+    <div class="endpoints">
+      <div class="endpoint">
+        <span class="endpoint-path">GET /health</span>
+        <span class="endpoint-method">Health Check</span>
+      </div>
+      <div class="endpoint">
+        <span class="endpoint-path">GET /ready</span>
+        <span class="endpoint-method">Readiness Check</span>
+      </div>
+      <div class="endpoint">
+        <span class="endpoint-path">GET /api/v1/partners</span>
+        <span class="endpoint-method">Partners API</span>
+      </div>
+      <div class="endpoint">
+        <span class="endpoint-path">GET /api/v1/organizations</span>
+        <span class="endpoint-method">Organizations API</span>
+      </div>
+      <div class="endpoint">
+        <span class="endpoint-path">POST /api/v1/auth/login</span>
+        <span class="endpoint-method">Authentication</span>
+      </div>
+      <div class="endpoint">
+        <span class="endpoint-path">POST /api/v1/auth/register</span>
+        <span class="endpoint-method">Registration</span>
+      </div>
+    </div>
+    <div class="footer">
+      <p>إصدار API: <span class="version">v1.0.0</span> | النشر: Railway | الدومين: atheersolutions.online</p>
+      <p>مرحلة 2: Modular Monolith مكتملة ✓ | مرحلة 3: Microservices قيد التخطيط</p>
+    </div>
+  </div>
+</body>
+</html>
+  `);
+});
 // Auth Module routes (from Modular Monolith)
 const authModule = app.modules.auth;
 app.post('/api/v1/auth/register', async (request, reply) => {

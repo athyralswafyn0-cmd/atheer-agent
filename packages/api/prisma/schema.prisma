@@ -16,20 +16,38 @@ model User {
   role                 UserRole            @default(MEMBER)
   emailVerified        DateTime?
   lastLoginAt          DateTime?
+  lastLoginIp          String?
+  loginAttempts        Int                 @default(0)
+  lockedUntil          DateTime?
+  passwordResetExpires DateTime?
+  passwordResetToken   String?             @unique
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean             @default(false)
+  backupCodes          String[]
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
   isActive             Boolean             @default(true)
-  passwordResetExpires DateTime?
-  passwordResetToken   String?             @unique
+  deletedAt            DateTime?
+  lastPasswordChange   DateTime            @default(now())
+  preferredLanguage    String              @default("ar")
+  timezone             String              @default("UTC")
+  organizationId       String?
+  organization         Organization?       @relation("UserOrganization", fields: [organizationId], references: [id])
+
   accounts             Account[]
   activities           Activity[]
   apiKeys              ApiKey[]
-  bots                 Bot[]               @relation("BotOwner")
+  bots                 Bot[]               @relation("BotCreated")
   notifications        Notification[]
   organizationMembers  OrganizationMember[]
   sessions             Session[]
+  ownedBots            Bot[]               @relation("BotOwner")
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([email])
+  @@index([organizationId])
+  @@index([role])
+  @@index([deletedAt])
 }
 
 model Account {
@@ -64,6 +82,20 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expires   DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
 }
 
 model Organization {
@@ -101,6 +133,7 @@ model Organization {
   members       OrganizationMember[]
   usage         Usage[]
   partners      Partner[]            @relation("OrganizationPartners")
+  users         User[]               @relation("UserOrganization")
 
   @@index([slug])
   @@index([domain])
@@ -175,7 +208,8 @@ model Bot {
   queueName            String?               @unique
   activities           Activity[]
   organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner                User                  @relation("BotOwner", fields: [ownerId], references: [id])
+  owner                User                  @relation("BotOwner", fields: [ownerId], references: [id], map: "Bot_owner_fkey")
+  createdBy            User                  @relation("BotCreated", fields: [ownerId], references: [id], map: "Bot_createdBy_fkey")
   conversations        Conversation[]
   embedScripts         EmbedScript?
   knowledgeBases       KnowledgeBase[]
