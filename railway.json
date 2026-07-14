@@ -1,6 +1,7 @@
 {
   "build": {
-    "command": "cd packages/api && npm ci && npm run build"
+    "command": "cd packages/api && npm ci && npm run build",
+    "builder": "NIXPACKS"
   },
   "start": {
     "command": "cd packages/api && npx prisma generate && PORT=8080 npm start"
