@@ -65,3 +65,4 @@ coverage/
 *.pem
 .vercel
 .turboC:/Users/user/Downloads/Portfolio_Projects/.env
+*.env

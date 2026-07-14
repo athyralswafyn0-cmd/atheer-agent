@@ -96,3 +96,5 @@ export const useSession = () => {
 };
 
 export const useAuth = useSession;
+
+// Force rebuild - ensure useAuth export is recognized
