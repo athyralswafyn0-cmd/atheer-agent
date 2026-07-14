@@ -2,3 +2,9 @@ packages:
   - 'packages/*'
   - 'dashboard'
   - 'packages/widget'
+allowBuilds:
+  '@prisma/client': set this to true or false
+  '@prisma/engines': set this to true or false
+  esbuild: set this to true or false
+  msgpackr-extract: set this to true or false
+  prisma: set this to true or false

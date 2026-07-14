@@ -1,5 +1,6 @@
 /// <reference path="../fastify.d.ts" />
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8),
@@ -26,7 +27,7 @@ export const authRoutes = async (app) => {
         if (existingUser) {
             return reply.code(409).send({ error: 'Email already registered' });
         }
-        const passwordHash = await app.bcrypt.hash(data.password, 12);
+        const passwordHash = await bcrypt.hash(data.password, 12);
         // Generate slug from organization name
         const slug = (data.organizationName || `${data.name}'s Organization`)
             .toLowerCase()
@@ -66,12 +67,21 @@ export const authRoutes = async (app) => {
             where: { email: data.email },
         });
         if (!user) {
+            console.log('[LOGIN DEBUG] User not found for email:', data.email);
             return reply.code(401).send({ error: 'Invalid credentials' });
         }
         if (!user.passwordHash) {
+            console.log('[LOGIN DEBUG] User has no passwordHash:', user.id);
             return reply.code(401).send({ error: 'Invalid credentials' });
         }
-        const passwordValid = await app.bcrypt.compare(data.password, user.passwordHash);
+        console.log('[LOGIN DEBUG] Attempting login for:', data.email);
+        console.log('[LOGIN DEBUG] User found:', user.id);
+        console.log('[LOGIN DEBUG] Password hash:', user.passwordHash);
+        console.log('[LOGIN DEBUG] Password hash length:', user.passwordHash?.length);
+        console.log('[LOGIN DEBUG] Input password:', data.password);
+        console.log('[LOGIN DEBUG] Direct bcrypt available:', typeof bcrypt);
+        const passwordValid = await bcrypt.compare(data.password, user.passwordHash);
+        console.log('[LOGIN DEBUG] Direct bcrypt compare:', passwordValid);
         if (!passwordValid) {
             return reply.code(401).send({ error: 'Invalid credentials' });
         }
@@ -79,7 +89,12 @@ export const authRoutes = async (app) => {
         if (!user.organizationId) {
             return reply.code(500).send({ error: 'Internal server error: user missing organization' });
         }
-        const token = app.jwt.sign({ userId: user.id, organizationId: user.organizationId, role: user.role });
+        const token = app.jwt.sign({
+            userId: user.id,
+            organizationId: user.organizationId,
+            role: user.role,
+            iss: 'atheer-agent'
+        });
         await app.prisma.user.update({
             where: { id: user.id },
             data: { lastLoginAt: new Date() },
@@ -146,11 +161,11 @@ export const authRoutes = async (app) => {
         if (!user) {
             return reply.code(400).send({ error: 'Invalid or expired token' });
         }
-        const passwordHash = await app.bcrypt.hash(data.password, 12);
+        const passwordHash = await bcrypt.hash(data.password, 12);
         await app.prisma.user.update({
             where: { id: user.id },
             data: {
-                passwordHash: passwordHash,
+                passwordHash,
                 passwordResetToken: null,
                 passwordResetExpires: null,
             },

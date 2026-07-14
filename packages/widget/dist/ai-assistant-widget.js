@@ -53,6 +53,7 @@ const translations = {
     leadSubmit: "إرسال",
     leadSuccess: "شكراً! سنتواصل معك قريباً.",
     leadError: "حدث خطأ. يرجى المحاولة مرة أخرى.",
+    leadFormTitle: "لنتواصل معك",
     poweredBy: "مدعوم بالذكاء الاصطناعي"
   },
   en: {
@@ -73,9 +74,256 @@ const translations = {
     leadSubmit: "Submit",
     leadSuccess: "Thank you! We'll be in touch soon.",
     leadError: "An error occurred. Please try again.",
+    leadFormTitle: "Let's stay in touch",
     poweredBy: "Powered by AI"
+  },
+  fr: {
+    welcome: "Bonjour ! Comment puis-je vous aider aujourd'hui ?",
+    placeholder: "Tapez votre message...",
+    send: "Envoyer",
+    typing: "Écrit...",
+    error: "Désolé, une erreur est survenue. Veuillez réessayer.",
+    offline: "Nous sommes actuellement hors ligne. Notre équipe reviendra bientôt.",
+    minimize: "Réduire",
+    maximize: "Agrandir",
+    close: "Fermer",
+    newChat: "Nouvelle conversation",
+    leadName: "Nom",
+    leadEmail: "E-mail",
+    leadPhone: "Téléphone",
+    leadCompany: "Entreprise",
+    leadSubmit: "Envoyer",
+    leadSuccess: "Merci ! Nous vous contacterons bientôt.",
+    leadError: "Une erreur est survenue. Veuillez réessayer.",
+    leadFormTitle: "Restons en contact",
+    poweredBy: "Propulsé par l'IA"
+  },
+  es: {
+    welcome: "¡Hola! ¿Cómo puedo ayudarte hoy?",
+    placeholder: "Escribe tu mensaje...",
+    send: "Enviar",
+    typing: "Escribiendo...",
+    error: "Lo siento, ocurrió un error. Por favor, inténtalo de nuevo.",
+    offline: "Actualmente estamos desconectados. Nuestro equipo volverá pronto.",
+    minimize: "Minimizar",
+    maximize: "Maximizar",
+    close: "Cerrar",
+    newChat: "Nuevo chat",
+    leadName: "Nombre",
+    leadEmail: "Correo electrónico",
+    leadPhone: "Teléfono",
+    leadCompany: "Empresa",
+    leadSubmit: "Enviar",
+    leadSuccess: "¡Gracias! Nos pondremos en contacto pronto.",
+    leadError: "Ocurrió un error. Por favor, inténtalo de nuevo.",
+    leadFormTitle: "Mantengámonos en contacto",
+    poweredBy: "Impulsado por IA"
+  },
+  de: {
+    welcome: "Hallo! Wie kann ich Ihnen heute helfen?",
+    placeholder: "Nachricht eingeben...",
+    send: "Senden",
+    typing: "Tippt...",
+    error: "Entschuldigung, ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    offline: "Wir sind derzeit offline. Unser Team wird bald zurück sein.",
+    minimize: "Minimieren",
+    maximize: "Maximieren",
+    close: "Schließen",
+    newChat: "Neuer Chat",
+    leadName: "Name",
+    leadEmail: "E-Mail",
+    leadPhone: "Telefon",
+    leadCompany: "Unternehmen",
+    leadSubmit: "Senden",
+    leadSuccess: "Danke! Wir melden uns bald bei Ihnen.",
+    leadError: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    leadFormTitle: "Bleiben wir in Kontakt",
+    poweredBy: "Angetrieben von KI"
+  },
+  zh: {
+    welcome: "您好！今天我能为您做些什么？",
+    placeholder: "输入您的消息...",
+    send: "发送",
+    typing: "正在输入...",
+    error: "抱歉，发生了错误。请重试。",
+    offline: "我们目前不在线。我们的团队稍后将回来。",
+    minimize: "最小化",
+    maximize: "最大化",
+    close: "关闭",
+    newChat: "新对话",
+    leadName: "姓名",
+    leadEmail: "邮箱",
+    leadPhone: "电话",
+    leadCompany: "公司",
+    leadSubmit: "提交",
+    leadSuccess: "谢谢！我们会尽快与您联系。",
+    leadError: "发生错误。请重试。",
+    leadFormTitle: "让我们保持联系",
+    poweredBy: "由AI驱动"
+  },
+  ja: {
+    welcome: "こんにちは！今日はどのようにお手伝いできますか？",
+    placeholder: "メッセージを入力...",
+    send: "送信",
+    typing: "入力中...",
+    error: "申し訳ありません、エラーが発生しました。再度お試しください。",
+    offline: "現在オフラインです。チームがまもなく戻ります。",
+    minimize: "最小化",
+    maximize: "最大化",
+    close: "閉じる",
+    newChat: "新しいチャット",
+    leadName: "名前",
+    leadEmail: "メール",
+    leadPhone: "電話",
+    leadCompany: "会社",
+    leadSubmit: "送信",
+    leadSuccess: "ありがとうございます！近日中にご連絡いたします。",
+    leadError: "エラーが発生しました。再度お試しください。",
+    leadFormTitle: "ご連絡をお待ちしています",
+    poweredBy: "AI搭載"
+  },
+  ko: {
+    welcome: "안녕하세요! 오늘 어떻게 도와드릴까요?",
+    placeholder: "메시지를 입력하세요...",
+    send: "보내기",
+    typing: "입력 중...",
+    error: "죄송합니다, 오류가 발생했습니다. 다시 시도해 주세요.",
+    offline: "현재 오프라인입니다. 팀이 곧 돌아옵니다.",
+    minimize: "최소화",
+    maximize: "최대화",
+    close: "닫기",
+    newChat: "새 채팅",
+    leadName: "이름",
+    leadEmail: "이메일",
+    leadPhone: "전화",
+    leadCompany: "회사",
+    leadSubmit: "제출",
+    leadSuccess: "감사합니다! 곧 연락드리겠습니다.",
+    leadError: "오류가 발생했습니다. 다시 시도해 주세요.",
+    leadFormTitle: "연락을 기다리겠습니다",
+    poweredBy: "AI 기반"
+  },
+  pt: {
+    welcome: "Olá! Como posso ajudar você hoje?",
+    placeholder: "Digite sua mensagem...",
+    send: "Enviar",
+    typing: "Digitando...",
+    error: "Desculpe, ocorreu um erro. Tente novamente.",
+    offline: "Estamos offline no momento. Nossa equipe voltará em breve.",
+    minimize: "Minimizar",
+    maximize: "Maximizar",
+    close: "Fechar",
+    newChat: "Novo chat",
+    leadName: "Nome",
+    leadEmail: "E-mail",
+    leadPhone: "Telefone",
+    leadCompany: "Empresa",
+    leadSubmit: "Enviar",
+    leadSuccess: "Obrigado! Entraremos em contato em breve.",
+    leadError: "Ocorreu um erro. Tente novamente.",
+    leadFormTitle: "Vamos manter contato",
+    poweredBy: "Impulsionado por IA"
+  },
+  it: {
+    welcome: "Ciao! Come posso aiutarti oggi?",
+    placeholder: "Scrivi il tuo messaggio...",
+    send: "Invia",
+    typing: "Sta scrivendo...",
+    error: "Mi dispiace, si è verificato un errore. Riprova.",
+    offline: "Siamo attualmente offline. Il nostro team tornerà presto.",
+    minimize: "Minimizza",
+    maximize: "Massimizza",
+    close: "Chiudi",
+    newChat: "Nuova chat",
+    leadName: "Nome",
+    leadEmail: "Email",
+    leadPhone: "Telefono",
+    leadCompany: "Azienda",
+    leadSubmit: "Invia",
+    leadSuccess: "Grazie! Ti contatteremo presto.",
+    leadError: "Si è verificato un errore. Riprova.",
+    leadFormTitle: "Restiamo in contatto",
+    poweredBy: "Alimentato da AI"
+  },
+  ru: {
+    welcome: "Здравствуйте! Чем могу помочь сегодня?",
+    placeholder: "Введите сообщение...",
+    send: "Отправить",
+    typing: "Печатает...",
+    error: "Извините, произошла ошибка. Попробуйте еще раз.",
+    offline: "Мы сейчас офлайн. Наша команда скоро вернется.",
+    minimize: "Свернуть",
+    maximize: "Развернуть",
+    close: "Закрыть",
+    newChat: "Новый чат",
+    leadName: "Имя",
+    leadEmail: "Email",
+    leadPhone: "Телефон",
+    leadCompany: "Компания",
+    leadSubmit: "Отправить",
+    leadSuccess: "Спасибо! Мы свяжемся с вами в ближайшее время.",
+    leadError: "Произошла ошибка. Попробуйте еще раз.",
+    leadFormTitle: "Остаемся на связи",
+    poweredBy: "На базе ИИ"
+  },
+  tr: {
+    welcome: "Merhaba! Bugün size nasıl yardımcı olabilirim?",
+    placeholder: "Mesajınızı yazın...",
+    send: "Gönder",
+    typing: "Yazıyor...",
+    error: "Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.",
+    offline: "Şu anda çevrimdışıyız. Ekibimiz yakında dönecek.",
+    minimize: "Küçült",
+    maximize: "Büyüt",
+    close: "Kapat",
+    newChat: "Yeni sohbet",
+    leadName: "Ad",
+    leadEmail: "E-posta",
+    leadPhone: "Telefon",
+    leadCompany: "Şirket",
+    leadSubmit: "Gönder",
+    leadSuccess: "Teşekkürler! En kısa sürede size ulaşacağız.",
+    leadError: "Bir hata oluştu. Lütfen tekrar deneyin.",
+    leadFormTitle: "İletişimde kalalım",
+    poweredBy: "AI destekli"
+  },
+  hi: {
+    welcome: "नमस्ते! आज मैं आपकी कैसे मदद कर सकता हूँ?",
+    placeholder: "अपना संदेश टाइप करें...",
+    send: "भेजें",
+    typing: "टाइप कर रहा है...",
+    error: "क्षमा करें, एक त्रुटि हुई। कृपया पुनः प्रयास करें।",
+    offline: "हम वर्तमान में ऑफ़लाइन हैं। हमारी टीम जल्द ही वापस आएगी।",
+    minimize: "न्यूनतम करें",
+    maximize: "अधिकतम करें",
+    close: "बंद करें",
+    newChat: "नई चैट",
+    leadName: "नाम",
+    leadEmail: "ईमेल",
+    leadPhone: "फोन",
+    leadCompany: "कंपनी",
+    leadSubmit: "भेजें",
+    leadSuccess: "धन्यवाद! हम जल्द ही आपसे संपर्क करेंगे।",
+    leadError: "एक त्रुटि हुई। कृपया पुनः प्रयास करें।",
+    leadFormTitle: "संपर्क में रहें",
+    poweredBy: "AI द्वारा संचालित"
   }
 };
+function getTranslation(lang, key) {
+  var _a;
+  const langTranslations = translations[lang];
+  if (langTranslations && langTranslations[key]) {
+    return langTranslations[key];
+  }
+  if (translations.en[key]) {
+    return translations.en[key];
+  }
+  if (translations.ar[key]) {
+    return translations.ar[key];
+  }
+  const firstLang = Object.keys(translations)[0];
+  return ((_a = translations[firstLang]) == null ? void 0 : _a[key]) || key;
+}
 const Widget = ({ config }) => {
   var _a, _b;
   const [isOpen, setIsOpen] = useState(false);
@@ -90,7 +338,7 @@ const Widget = ({ config }) => {
   const messagesEndRef = useRef(null);
   const widgetContainerRef = useRef(null);
   useRef();
-  const t = translations[language] || translations.ar;
+  const t = (key) => getTranslation(language, key);
   const scrollToBottom = useCallback(() => {
     var _a2;
     (_a2 = messagesEndRef.current) == null ? void 0 : _a2.scrollIntoView({ behavior: "smooth" });
@@ -165,7 +413,7 @@ const Widget = ({ config }) => {
       const errorMessage = {
         id: `msg-${Date.now() + 1}`,
         role: "assistant",
-        content: t.error,
+        content: t("error"),
         timestamp: (/* @__PURE__ */ new Date()).toISOString()
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -195,7 +443,7 @@ const Widget = ({ config }) => {
         const successMessage = {
           id: `msg-${Date.now()}`,
           role: "assistant",
-          content: t.leadSuccess,
+          content: t("leadSuccess"),
           timestamp: (/* @__PURE__ */ new Date()).toISOString()
         };
         setMessages((prev) => [...prev, successMessage]);
@@ -205,7 +453,7 @@ const Widget = ({ config }) => {
       }
     } catch (error) {
       console.error("Lead submission error:", error);
-      alert(t.leadError);
+      alert(t("leadError"));
     } finally {
       setLeadSubmitting(false);
     }
@@ -263,7 +511,7 @@ const Widget = ({ config }) => {
           e.currentTarget.style.transform = "scale(1)";
           e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.15)";
         },
-        "aria-label": t.maximize,
+        "aria-label": t("maximize"),
         children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "28", height: "28", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) })
       }
     ) });
@@ -311,7 +559,7 @@ const Widget = ({ config }) => {
                       style: { background: "transparent", border: "none", color: "white", cursor: "pointer", padding: "8px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.8 },
                       onMouseEnter: (e) => e.currentTarget.style.opacity = "1",
                       onMouseLeave: (e) => e.currentTarget.style.opacity = "0.8",
-                      title: t.newChat,
+                      title: t("newChat"),
                       children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5v14M19 12H5" }) })
                     }
                   ),
@@ -322,7 +570,7 @@ const Widget = ({ config }) => {
                       style: { background: "transparent", border: "none", color: "white", cursor: "pointer", padding: "8px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.8 },
                       onMouseEnter: (e) => e.currentTarget.style.opacity = "1",
                       onMouseLeave: (e) => e.currentTarget.style.opacity = "0.8",
-                      "aria-label": t.minimize,
+                      "aria-label": t("minimize"),
                       children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "18", y1: "6", x2: "6", y2: "18" }),
                         /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "6", y1: "6", x2: "18", y2: "18" })
@@ -334,7 +582,7 @@ const Widget = ({ config }) => {
             }
           ),
           showLeadForm && (botConfig == null ? void 0 : botConfig.collectLeads) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ai-assistant-lead-form", style: { padding: "16px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { style: { margin: "0 0 12px", fontSize: "14px", fontWeight: 600 }, children: "لنتواصل معك" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { style: { margin: "0 0 12px", fontSize: "14px", fontWeight: 600 }, children: t("leadFormTitle") }),
             botConfig.leadFields.map((field) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: "12px" }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "block", fontSize: "12px", fontWeight: 500, marginBottom: "4px", color: "#374151" }, children: [
                 field.label,
@@ -381,7 +629,7 @@ const Widget = ({ config }) => {
                   cursor: leadSubmitting ? "not-allowed" : "pointer",
                   transition: "background 0.2s"
                 },
-                children: leadSubmitting ? "جاري الإرسال..." : t.leadSubmit
+                children: leadSubmitting ? "جاري الإرسال..." : t("leadSubmit")
               }
             )
           ] }),
@@ -434,7 +682,7 @@ const Widget = ({ config }) => {
                 value: input,
                 onChange: (e) => setInput(e.target.value),
                 onKeyDown: handleKeyDown,
-                placeholder: t.placeholder,
+                placeholder: t("placeholder"),
                 disabled: isLoading || showLeadForm,
                 style: {
                   flex: 1,
@@ -474,7 +722,7 @@ const Widget = ({ config }) => {
                 },
                 onMouseDown: (e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(0.95)"),
                 onMouseUp: (e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)"),
-                "aria-label": t.send,
+                "aria-label": t("send"),
                 children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "22", y1: "2", x2: "11", y2: "13" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })
@@ -482,7 +730,7 @@ const Widget = ({ config }) => {
               }
             )
           ] }),
-          (botConfig == null ? void 0 : botConfig.showBranding) !== false && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "8px 16px", textAlign: "center", fontSize: "11px", color: "#9ca3af", borderTop: "1px solid #f3f4f6" }, children: t.poweredBy })
+          (botConfig == null ? void 0 : botConfig.showBranding) !== false && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "8px 16px", textAlign: "center", fontSize: "11px", color: "#9ca3af", borderTop: "1px solid #f3f4f6" }, children: t("poweredBy") })
         ]
       }
     ),

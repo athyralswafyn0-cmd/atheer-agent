@@ -31,7 +31,7 @@ export const organizationsRoutes = async (app) => {
                             id: true,
                             name: true,
                             email: true,
-                            role: true,
+                            role: true
                         }
                     }
                 }
@@ -40,16 +40,19 @@ export const organizationsRoutes = async (app) => {
         }
         // If user is partner admin, return all organizations under their partner
         if (user.role === 'PARTNER_ADMIN' || user.role === 'PARTNER_VIEWER') {
-            // First find the partner associated with the user
-            const partner = await app.prisma.partner.findFirst({
-                where: {
-                    users: {
-                        some: {
-                            id: user.id
+            // First find the partner associated with the user's organization
+            let partner = null;
+            if (user.organizationId) {
+                partner = await app.prisma.partner.findFirst({
+                    where: {
+                        organizations: {
+                            some: {
+                                id: user.organizationId
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
             if (partner) {
                 const orgs = await app.prisma.organization.findMany({
                     where: {
@@ -66,7 +69,7 @@ export const organizationsRoutes = async (app) => {
                                 id: true,
                                 name: true,
                                 email: true,
-                                role: true,
+                                role: true
                             }
                         }
                     }
@@ -89,9 +92,7 @@ export const organizationsRoutes = async (app) => {
         }
         const data = createOrganizationSchema.parse(request.body);
         // Generate slug from name if not provided
-        const slug = data.domain
-            ? data.domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
-            : data.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
+        const slug = data.domain ? data.domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : data.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
         // Check if domain already exists
         if (data.domain) {
             const existing = await app.prisma.organization.findUnique({
@@ -148,7 +149,7 @@ export const organizationsRoutes = async (app) => {
                             id: true,
                             name: true,
                             email: true,
-                            role: true,
+                            role: true
                         }
                     }
                 }
@@ -157,15 +158,18 @@ export const organizationsRoutes = async (app) => {
         // Partner admins can access organizations under their partner
         else if (user.role === 'PARTNER_ADMIN' || user.role === 'PARTNER_VIEWER') {
             // First find the partner associated with the user
-            const partner = await app.prisma.partner.findFirst({
-                where: {
-                    users: {
-                        some: {
-                            id: user.id
+            let partner = null;
+            if (user.organizationId) {
+                partner = await app.prisma.partner.findFirst({
+                    where: {
+                        organizations: {
+                            some: {
+                                id: user.organizationId
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
             if (partner) {
                 organization = await app.prisma.organization.findFirst({
                     where: {
@@ -183,7 +187,7 @@ export const organizationsRoutes = async (app) => {
                                 id: true,
                                 name: true,
                                 email: true,
-                                role: true,
+                                role: true
                             }
                         }
                     }
@@ -209,15 +213,18 @@ export const organizationsRoutes = async (app) => {
         }
         else if (user.role === 'PARTNER_ADMIN' || user.role === 'OWNER' || user.role === 'ADMIN') {
             // Partner admins can update organizations under their partner
-            const partner = await app.prisma.partner.findFirst({
-                where: {
-                    users: {
-                        some: {
-                            id: user.id
+            let partner = null;
+            if (user.organizationId) {
+                partner = await app.prisma.partner.findFirst({
+                    where: {
+                        organizations: {
+                            some: {
+                                id: user.organizationId
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
             if (partner) {
                 const org = await app.prisma.organization.findUnique({
                     where: { id },
@@ -266,15 +273,18 @@ export const organizationsRoutes = async (app) => {
             canDelete = user.organizationId === id;
         }
         else if (user.role === 'PARTNER_ADMIN' || user.role === 'OWNER' || user.role === 'ADMIN') {
-            const partner = await app.prisma.partner.findFirst({
-                where: {
-                    users: {
-                        some: {
-                            id: user.id
+            let partner = null;
+            if (user.organizationId) {
+                partner = await app.prisma.partner.findFirst({
+                    where: {
+                        organizations: {
+                            some: {
+                                id: user.organizationId
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
             if (partner) {
                 canDelete = await app.prisma.$queryRaw `SELECT 1 FROM "OrganizationPartner" WHERE "organizationId" = ${id} AND "partnerId" = ${partner.id}` !== null;
             }
@@ -308,9 +318,9 @@ export const organizationsRoutes = async (app) => {
         for (const data of organizationsData) {
             try {
                 // Generate slug
-                const slug = data.domain
-                    ? data.domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
-                    : data.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
+                const slug = data.domain ?
+                    data.domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() :
+                    data.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
                 // Check if domain already exists
                 if (data.domain) {
                     const existing = await app.prisma.organization.findUnique({

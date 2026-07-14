@@ -1,12 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
-export const authMiddleware = async (app: FastifyInstance) => {
-  if (!app.hasRequestDecorator('user')) {
-    app.decorateRequest('user', null);
-  }
-
-  app.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
-    console.log('[AUTH MIDDLEWARE] URL:', request.url, 'Auth header:', request.headers.authorization ? 'present' : 'missing');
+// @fastify/jwt provides jwt.sign and jwt.verify, but not an authenticate hook
+// We need to add our own authenticate method that can be used as a preHandler
+export const authMiddleware = (app: FastifyInstance) => {
+  // Add a custom authenticate method that can be used as preHandler in routes
+  app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
+    console.log('[AUTHENTICATE] URL:', request.url);
+    
     // Skip auth for public routes
     const publicPaths = [
       '/health',
@@ -59,4 +59,6 @@ export const authMiddleware = async (app: FastifyInstance) => {
       return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Authentication failed' });
     }
   });
+
+  console.log('[AUTH MIDDLEWARE] Registered - using custom authenticate hook');
 };

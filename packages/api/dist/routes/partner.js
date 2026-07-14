@@ -306,8 +306,14 @@ export const partnerRoutes = async (app) => {
         const { partnerId } = request.params;
         const { startDate, endDate } = request.query;
         const organizations = await app.prisma.organization.findMany({
-            where: { partnerId },
-            select: { id: true, name: true },
+            where: {
+                partners: {
+                    some: {
+                        id: partnerId
+                    }
+                }
+            },
+            select: { id: true, name: true }
         });
         const orgIds = organizations.map(o => o.id);
         const where = { organizationId: { in: orgIds } };

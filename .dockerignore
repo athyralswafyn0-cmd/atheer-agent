@@ -1,0 +1,76 @@
+# Docker ignore file for Atheer Agent AI
+
+# Git
+.git
+.gitignore
+
+# Node modules
+node_modules
+*.log
+
+# Build outputs
+dist
+build
+.next
+out
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test
+coverage
+.nyc_output
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Prisma
+prisma/migrations/*
+!prisma/migrations/rls_policies.sql
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test
+*.test.ts
+*.spec.ts
+
+# Temp
+tmp
+temp
+*.tmp
+
+# Monorepo packages (except api)
+packages/dashboard
+packages/widget
+
+# Documentation
+README.md
+*.md
+!packages/api/README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Monitoring
+monitoring
+prometheus-data
+grafana-data

@@ -102,6 +102,7 @@ model Organization {
   members       OrganizationMember[]
   usage         Usage[]
   users         User[]               @relation("UserOrganization")
+  conversations Conversation[]
 
   @@index([slug])
   @@index([domain])
@@ -221,7 +222,9 @@ model Conversation {
   avgResponseTime Float?
   lastMessageAt   DateTime?
   botId           String
+  organizationId  String
   bot             Bot                @relation(fields: [botId], references: [id], onDelete: Cascade)
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   lead            Lead?
   messages        Message[]
 
@@ -229,6 +232,7 @@ model Conversation {
   @@index([sessionId])
   @@index([startedAt])
   @@index([status])
+  @@index([organizationId])
 }
 
 model Message {
@@ -263,11 +267,13 @@ model Lead {
   utmTerm        String?
   assignedTo     String?
   notes          String?
+  score          Int?          @default(0)
   botId          String
   conversationId String?       @unique
   organizationId String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  convertedAt    DateTime?
   bot            Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
   organization   Organization? @relation("OrganizationLeads", fields: [organizationId], references: [id])

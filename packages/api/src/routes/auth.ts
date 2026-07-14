@@ -2,6 +2,7 @@
 
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -36,7 +37,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(409).send({ error: 'Email already registered' });
     }
 
-    const passwordHash = await app.bcrypt.hash(data.password, 12);
+    const passwordHash = await bcrypt.hash(data.password, 12);
 
     // Generate slug from organization name
     const slug = (data.organizationName || `${data.name}'s Organization`)
@@ -77,60 +78,74 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post('/login', async (request, reply) => {
-    const data = loginSchema.parse(request.body);
+      const data = loginSchema.parse(request.body);
 
-    const user = await app.prisma.user.findUnique({
-      where: { email: data.email },
+      const user = await app.prisma.user.findUnique({
+        where: { email: data.email },
+      });
+
+      if (!user) {
+        console.log('[LOGIN DEBUG] User not found for email:', data.email);
+        return reply.code(401).send({ error: 'Invalid credentials' });
+      }
+
+      if (!user.passwordHash) {
+        console.log('[LOGIN DEBUG] User has no passwordHash:', user.id);
+        return reply.code(401).send({ error: 'Invalid credentials' });
+      }
+
+      console.log('[LOGIN DEBUG] Attempting login for:', data.email);
+      console.log('[LOGIN DEBUG] User found:', user.id);
+      console.log('[LOGIN DEBUG] Password hash:', user.passwordHash);
+      console.log('[LOGIN DEBUG] Password hash length:', user.passwordHash?.length);
+      console.log('[LOGIN DEBUG] Input password:', data.password);
+      console.log('[LOGIN DEBUG] Direct bcrypt available:', typeof bcrypt);
+
+      const passwordValid = await bcrypt.compare(data.password, user.passwordHash);
+      console.log('[LOGIN DEBUG] Direct bcrypt compare:', passwordValid);
+
+      if (!passwordValid) {
+        return reply.code(401).send({ error: 'Invalid credentials' });
+      }
+        // Ensure the user has an organizationId
+        if (!user.organizationId) {
+          return reply.code(500).send({ error: 'Internal server error: user missing organization' });
+        }
+
+        const token = app.jwt.sign({ 
+      userId: user.id, 
+      organizationId: user.organizationId, 
+      role: user.role,
+      iss: 'atheer-agent'
     });
 
-    if (!user) {
-      return reply.code(401).send({ error: 'Invalid credentials' });
-    }
+        await app.prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
 
-    if (!user.passwordHash) {
-      return reply.code(401).send({ error: 'Invalid credentials' });
-    }
+        await app.prisma.activity.create({
+          data: {
+            action: 'user_login',
+            entityType: 'user',
+            entityId: user.id,
+            organizationId: user.organizationId,
+            userId: user.id,
+          },
+        });
 
-    const passwordValid = await app.bcrypt.compare(data.password, user.passwordHash);
-
-    if (!passwordValid) {
-      return reply.code(401).send({ error: 'Invalid credentials' });
-    }
-
-    // Ensure the user has an organizationId
-    if (!user.organizationId) {
-      return reply.code(500).send({ error: 'Internal server error: user missing organization' });
-    }
-
-    const token = app.jwt.sign({ userId: user.id, organizationId: user.organizationId, role: user.role });
-
-    await app.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-
-    await app.prisma.activity.create({
-      data: {
-        action: 'user_login',
-        entityType: 'user',
-        entityId: user.id,
-        organizationId: user.organizationId,
-        userId: user.id,
-      },
-    });
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        organizationId: user.organizationId,
-        avatar: user.avatar,
-      },
-      token,
-    };
-  });
+        return {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            organizationId: user.organizationId,
+            avatar: user.avatar,
+          },
+          token,
+        };
+      });
 
   app.post('/forgot-password', async (request, reply) => {
     const data = forgotPasswordSchema.parse(request.body);
@@ -183,12 +198,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Invalid or expired token' });
     }
 
-    const passwordHash = await app.bcrypt.hash(data.password, 12);
+    const passwordHash = await bcrypt.hash(data.password, 12);
 
     await app.prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordHash: passwordHash,
+        passwordHash,
         passwordResetToken: null,
         passwordResetExpires: null,
       },

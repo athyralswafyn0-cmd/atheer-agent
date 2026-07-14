@@ -1,43 +1,54 @@
+# Atheer Agent API - Production Dockerfile
+# Single-stage build for simplicity and reliability
+
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
+# Install system dependencies
+RUN apk add --no-cache \
+    openssl \
+    ca-certificates \
+    dumb-init \
+    && rm -rf /var/cache/apk/*
+
+# Create app user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs
+
 WORKDIR /app
 
-# Install openssl for Prisma
-RUN apk add --no-cache openssl
+# Install pnpm and Prisma 5.x
+RUN npm install -g pnpm@9 && \
+    npm install -g prisma@5
 
-COPY package.json package-lock.json* ./
-RUN npm ci
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/api/package.json packages/api/
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Install dependencies
+RUN pnpm install --frozen-lockfile --prod=false --filter=@atheer/agent-api...
+
+# Copy source code
 COPY . .
 
-RUN npx prisma generate
-RUN npm run build
+# Generate Prisma Client
+RUN cd packages/api && npx prisma generate
 
-# Production image
-FROM base AS runner
-WORKDIR /app
+# Build API
+RUN cd packages/api && npm run build
 
-ENV NODE_ENV production
+# Create necessary directories
+RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app/logs
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 fastify
+USER nodejs
 
-COPY --from=builder --chown=fastify:nodejs /app/dist ./dist
-COPY --from=builder --chown=fastify:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=fastify:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=fastify:nodejs /app/prisma ./prisma
+EXPOSE 8080
 
-USER fastify
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-EXPOSE 3001
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
 
-ENV PORT 3001
-ENV HOST 0.0.0.0
-
-CMD ["node", "dist/index.js"]
+# Start command
+CMD ["node", "packages/api/dist/index.js"]

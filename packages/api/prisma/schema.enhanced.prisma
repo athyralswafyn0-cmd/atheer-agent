@@ -1,0 +1,1403 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema", "viewSupport"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "audit", "analytics"]
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+  PARTNER_ADMIN
+  PARTNER_VIEWER
+}
+
+enum BotStatus {
+  ACTIVE
+  INACTIVE
+  TRAINING
+  ERROR
+}
+
+enum BotType {
+  CUSTOMER_SUPPORT
+  LEAD_GENERATION
+  APPOINTMENT_BOOKING
+  PRODUCT_RECOMMENDATION
+  FAQ
+  CUSTOM
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+  ESCALATED
+  PENDING
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum NotificationChannel {
+  EMAIL
+  TELEGRAM
+  SLACK
+  WEBHOOK
+}
+
+enum LicenseStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  TRIAL
+}
+
+enum SubscriptionPlan {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  CUSTOM
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum ActivityAction {
+  CREATED
+  UPDATED
+  DELETED
+  LOGIN
+  LOGOUT
+  PASSWORD_CHANGE
+  PERMISSION_CHANGE
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  BOT_CREATED
+  BOT_TRAINED
+  BOT_DEPLOYED
+  CONVERSATION_STARTED
+  CONVERSATION_CLOSED
+  LEAD_CREATED
+  LEAD_CONVERTED
+  INVITE_SENT
+  INVITE_ACCEPTED
+  SETTINGS_CHANGED
+  BILLING_UPDATED
+  WEBHOOK_DELIVERED
+  WEBHOOK_FAILED
+}
+
+// =============================================
+// CORE TENANT MODELS
+// =============================================
+
+model Organization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  domain          String?  @unique
+  logo            String?
+  description     String?
+  industry        String?
+  size            String?  // "1-10", "11-50", "51-200", "201-500", "500+"
+  website         String?
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  country         String?
+  status          OrganizationStatus @default(ACTIVE)
+  plan            SubscriptionPlan   @default(STARTER)
+  settings        Json      @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  licenseId       String?   @unique
+  deletedAt       DateTime?
+
+  // Relations
+  license         License?             @relation("LicenseOrganization", fields: [licenseId], references: [id])
+  partners        Partner[]            @relation("OrganizationPartners")
+  activities      Activity[]
+  apiKeys         ApiKey[]
+  bots            Bot[]
+  brand           Brand?               @relation("BrandOrganization")
+  integrations    Integration[]
+  leads           Lead[]               @relation("OrganizationLeads")
+  notifications   Notification[]
+  licenseRel      License?             @relation("LicenseOrganization", fields: [licenseId], references: [id])
+  members         OrganizationMember[]
+  usage           Usage[]
+  users           User[]               @relation("UserOrganization")
+  brandRel        Brand?               @relation("BrandOrganization")
+
+  @@index([slug])
+  @@index([domain])
+  @@index([status])
+  @@index([plan])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// Organization Members (Many-to-Many User <-> Organization)
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  organizationId String
+  role           UserRole     @default(MEMBER)
+  joinedAt       DateTime     @default(now())
+  invitedBy      String?
+  invitedAt      DateTime?
+  acceptedAt     DateTime?
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+}
+
+// =============================================
+// PARTNER ECOSYSTEM
+// =============================================
+
+model Partner {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  passwordHash  String?
+  isActive      Boolean        @default(true)
+  commissionRate Float        @default(0.20)
+  stripeAccountId String?
+  stripeOnboardingComplete Boolean @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  licenseId     String?        @unique
+  brandId       String?        @unique
+  parentPartnerId String?
+
+  brand         Brand?         @relation("PartnerBrand")
+  license       License?       @relation("PartnerLicense")
+  organizations Organization[] @relation("OrganizationPartners")
+  subPartners   Partner[]      @relation("PartnerHierarchy")
+  parentPartner Partner?       @relation("PartnerHierarchy", fields: [parentPartnerId], references: [id])
+
+  @@index([email])
+  @@index([isActive])
+  @@index([parentPartnerId])
+}
+
+model License {
+  id                   String        @id @default(cuid())
+  plan                 SubscriptionPlan
+  partnerId            String        @unique
+  expiresAt            DateTime
+  maxOrganizations     Int           @default(10)
+  maxBots              Int           @default(50)
+  maxUsers             Int           @default(100)
+  maxMessages          Int           @default(100000)
+  maxStorageMB         Int           @default(10000)
+  status               LicenseStatus @default(ACTIVE)
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+  stripePriceId        String?
+  trialEndsAt          DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  partner              Partner       @relation("PartnerLicense", fields: [partnerId], references: [id])
+  organization         Organization? @relation("LicenseOrganization")
+
+  @@index([partnerId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model Brand {
+  id              String        @id @default(cuid())
+  partnerId       String?       @unique
+  organizationId  String?       @unique
+  logo            String?
+  favicon         String?
+  brandName       String?
+  primaryColor    String        @default("#2563eb")
+  secondaryColor  String        @default("#ffffff")
+  font            String?
+  emailSender     String?
+  supportEmail    String?
+  supportPhone    String?
+  customDomain    String?       @unique
+  privacyPolicy   String?
+  terms           String?
+  footer          String?
+  loginBackground String?
+  faviconDark     String?
+  customCss       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization? @relation("BrandOrganization", fields: [organizationId], references: [id])
+  partner         Partner?      @relation("PartnerBrand", fields: [partnerId], references: [id])
+
+  @@index([partnerId])
+  @@index([organizationId])
+  @@index([customDomain])
+}
+
+// =============================================
+// USER & AUTH MODELS
+// =============================================
+
+model User {
+  id                   String              @id @default(cuid())
+  email                String              @unique
+  passwordHash         String?
+  name                 String?
+  avatar               String?
+  role                 UserRole            @default(MEMBER)
+  emailVerified        DateTime?
+  emailVerificationToken String?           @unique
+  emailVerificationExpires DateTime?
+  lastLoginAt          DateTime?
+  lastLoginIp          String?
+  loginAttempts        Int                 @default(0)
+  lockedUntil          DateTime?
+  passwordResetToken   String?             @unique
+  passwordResetExpires DateTime?
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean             @default(false)
+  backupCodes          String[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  deletedAt            DateTime?
+  lastPasswordChange   DateTime            @default(now())
+  preferredLanguage    String              @default("ar")
+  timezone             String              @default("UTC")
+
+  organizationId       String?
+  organization         Organization?       @relation("UserOrganization", fields: [organizationId], references: [id])
+
+  // Relations
+  accounts             Account[]
+  activities           Activity[]
+  apiKeys              ApiKey[]
+  bots                 Bot[]               @relation("BotOwner")
+  notifications        Notification[]
+  organizationMembers  OrganizationMember?
+  sessions             Session[]
+  ownedBots            Bot[]               @relation("BotOwner")
+  passwordResetTokens  PasswordResetToken[]
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([role])
+  @@index([deletedAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ipAddress    String?
+  userAgent    String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expires   DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+// =============================================
+// API KEYS & INTEGRATIONS
+// =============================================
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  name           String
+  keyHash        String       @unique
+  prefix         String       @unique
+  permissions    String[]     @default(["chat:read", "chat:write"])
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  organizationId String
+  userId         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lastUsedBy     String?
+  lastUsedIp     String?
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([prefix])
+  @@index([isActive])
+}
+
+model Integration {
+  id             String       @id @default(cuid())
+  name           String
+  type           String       // "slack", "whatsapp", "teams", "zapier", "webhook", "custom"
+  config         Json         @default("{}")
+  credentials    Json         @default("{}") // Encrypted
+  isActive       Boolean      @default(true)
+  lastSyncAt     DateTime?
+  lastError      String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([isActive])
+}
+
+model Webhook {
+  id             String       @id @default(cuid())
+  name           String
+  url            String
+  secret         String
+  events         String[]
+  isActive       Boolean      @default(true)
+  retryCount     Int          @default(3)
+  timeoutMs      Int          @default(30000)
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lastTriggered  DateTime?
+  lastSuccess    DateTime?
+  lastFailure    DateTime?
+  failureCount   Int          @default(0)
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  webhookId   String
+  event       String
+  payload     Json
+  response    Json?
+  statusCode  Int?
+  error       String?
+  attempt     Int      @default(1)
+  nextRetry   DateTime?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@index([statusCode])
+}
+
+// =============================================
+// BOTS & CONVERSATIONS
+// =============================================
+
+model Bot {
+  id                   String                @id @default(cuid())
+  name                 String
+  description          String?
+  type                 BotType               @default(CUSTOM)
+  status               BotStatus             @default(INACTIVE)
+  avatar               String?
+  primaryColor         String                @default("#2563eb")
+  secondaryColor       String                @default("#ffffff")
+  position             String                @default("bottom-right")
+  welcomeMessage       String                @default("مرحباً! كيف يمكنني مساعدتك اليوم؟")
+  placeholder          String                @default("اكتب رسالتك هنا...")
+  showBranding         Boolean               @default(true)
+  language             String                @default("ar")
+  supportedLanguages   String[]              @default(["ar", "en"])
+  model                String                @default("gpt-4o")
+  fallbackModel        String?               @default("gpt-4o-mini")
+  temperature          Float                 @default(0.7)
+  maxTokens            Int                   @default(2000)
+  systemPrompt         String
+  fallbackMessage      String                @default("عذراً، لم أفهم طلبك. هل يمكنك إعادة الصياغة؟")
+  trainingStatus       String                @default("pending")
+  lastTrainedAt        DateTime?
+  trainingError        String?
+  trainingProgress     Int                   @default(0)
+  collectLeads         Boolean               @default(false)
+  leadFields           Json                  @default("[]")
+  notifyOnLead         Boolean               @default(true)
+  notificationChannels NotificationChannel[] @default([EMAIL])
+  notificationEmails   String[]              @default([])
+  totalConversations   Int                   @default(0)
+  totalMessages        Int                   @default(0)
+  avgResponseTime      Float                 @default(0)
+  satisfactionRate     Float                 @default(0)
+  organizationId       String
+  ownerId              String
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  deletedAt            DateTime?
+  queueName            String?               @unique
+
+  // AI Configuration
+  temperatureRange     Float[]               @default([0.0, 1.0])
+  maxContextTokens     Int                   @default(4000)
+  topP                 Float                 @default(1.0)
+  frequencyPenalty     Float                 @default(0.0)
+  presencePenalty      Float                 @default(0.0)
+  stopSequences        String[]              @default([])
+  responseFormat       String?               // "text", "json_object"
+
+  // RAG Configuration
+  ragEnabled           Boolean               @default(true)
+  ragTopK              Int                   @default(5)
+  ragSimilarityThreshold Float              @default(0.7)
+  ragMaxTokens         Int                   @default(2000)
+  rerankEnabled        Boolean               @default(true)
+  rerankModel          String?               @default("cohere-rerank-v3")
+
+  // Relations
+  organizationId       String
+  ownerId              String
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner                User                  @relation("BotOwner", fields: [ownerId], references: [id])
+  conversations        Conversation[]
+  embedScripts         EmbedScript?
+  knowledgeBases       KnowledgeBase[]
+  leads                Lead[]
+  trainingJobs         BotTrainingJob[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([ownerId])
+  @@index([deletedAt])
+}
+
+model BotTrainingJob {
+  id              String   @id @default(cuid())
+  botId           String
+  status          String   @default("pending") // pending, processing, completed, failed
+  progress        Int      @default(0)
+  totalChunks     Int      @default(0)
+  processedChunks Int      @default(0)
+  error           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bot             Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([botId])
+  @@index([status])
+}
+
+model KnowledgeBase {
+  id          String           @id @default(cuid())
+  name        String
+  type        String           // "pdf", "url", "text", "faq", "sitemap"
+  source      String
+  content     String?
+  chunksCount Int              @default(0)
+  status      String           @default("processing")
+  error       String?
+  metadata    Json             @default("{}")
+  botId       String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+
+  bot         Bot              @relation(fields: [botId], references: [id], onDelete: Cascade)
+  chunks      KnowledgeChunk[]
+
+  @@index([botId])
+  @@index([status])
+  @@index([type])
+}
+
+model KnowledgeChunk {
+  id              String                @id @default(cuid())
+  content         String
+  embedding       Unsupported("vector") // pgvector
+  chunkIndex      Int
+  tokens          Int
+  metadata        Json                  @default("{}")
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase         @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([knowledgeBaseId])
+  @@index([chunkIndex])
+}
+
+model Conversation {
+  id              String             @id @default(cuid())
+  sessionId       String             @unique
+  visitorId       String?
+  userIp          String?
+  userAgent       String?
+  language        String             @default("ar")
+  status          ConversationStatus @default(ACTIVE)
+  metadata        Json               @default("{}")
+  startedAt       DateTime           @default(now())
+  endedAt         DateTime?
+  rating          Int?
+  feedback        String?
+  messageCount    Int                @default(0)
+  avgResponseTime Float?
+  lastMessageAt   DateTime?
+  botId           String
+  organizationId  String
+  visitorCountry  String?
+  visitorCity     String?
+  referrer        String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmContent      String?
+  utmTerm         String?
+
+  bot             Bot                @relation(fields: [botId], references: [id], onDelete: Cascade)
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead            Lead?
+  messages        Message[]
+
+  @@index([botId])
+  @@index([sessionId])
+  @@index([startedAt])
+  @@index([status])
+  @@index([organizationId])
+  @@index([endedAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  role           MessageRole
+  content        String
+  tokens         Int?
+  model          String?
+  metadata       Json         @default("{}")
+  conversationId String
+  createdAt      DateTime     @default(now())
+  processingTime Int?         // ms
+  tokenUsage     Json?        // { prompt: 100, completion: 50, total: 150 }
+  modelUsed      String?      // Actual model used (may differ from configured)
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([role])
+}
+
+model Lead {
+  id             String        @id @default(cuid())
+  name           String?
+  email          String?
+  phone          String?
+  company        String?
+  position       String?
+  customData     Json          @default("{}")
+  status         LeadStatus    @default(NEW)
+  source         String        @default("chat_widget")
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  assignedTo     String?
+  notes          String?
+  score          Int?          @default(0)
+  botId          String
+  conversationId String?       @unique
+  organizationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  convertedAt    DateTime?
+
+  bot            Bot           @relation(fields: [botId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  organization   Organization? @relation("OrganizationLeads", fields: [organizationId], references: [id])
+
+  @@index([botId])
+  @@index([status])
+  @@index([email])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([assignedTo])
+}
+
+model EmbedScript {
+  id            String   @id @default(cuid())
+  domain        String   @unique
+  allowed       Boolean  @default(true)
+  scriptVersion String   @default("1.0.0")
+  botId         String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  bot           Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([domain])
+}
+
+// =============================================
+// KNOWLEDGE BASE & RAG
+// =============================================
+
+// Already defined above
+
+// =============================================
+// BILLING & SUBSCRIPTIONS
+// =============================================
+
+model Subscription {
+  id                   String           @id @default(cuid())
+  organizationId       String           @unique
+  partnerId            String?
+  plan                 SubscriptionPlan
+  status               LicenseStatus    @default(ACTIVE)
+  stripeSubscriptionId String?          @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  trialEndsAt          DateTime?
+  cancelAtPeriodEnd    Boolean          @default(false)
+  cancelledAt          DateTime?
+  trialEndsAt          DateTime?
+  trialUsed            Boolean          @default(false)
+  quantity             Int              @default(1)
+  metadata             Json             @default("{}")
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  organization         Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  partner              Partner?         @relation(fields: [partnerId], references: [id])
+
+  @@index([partnerId])
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  number          String   @unique
+  organizationId  String
+  subscriptionId  String?
+  amount          Float
+  currency        String   @default("USD")
+  status          String   @default("pending") // pending, paid, failed, refunded, cancelled
+  invoiceUrl      String?
+  invoicePdf      String?
+  dueDate         DateTime
+  paidAt          DateTime?
+  failedAt        DateTime?
+  retryCount      Int      @default(0)
+  stripeInvoiceId String?  @unique
+  stripePaymentIntentId String?
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([stripeInvoiceId])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  amount          Float
+  currency        String   @default("USD")
+  status          String   @default("pending") // pending, succeeded, failed, refunded
+  method          String   // stripe, paypal, manual
+  stripePaymentId String?  @unique
+  stripeRefundId  String?
+  refundedAmount  Float    @default(0)
+  refundedAt      DateTime?
+  failureReason   String?
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([stripePaymentId])
+}
+
+model PartnerCommission {
+  id              String   @id @default(cuid())
+  partnerId       String
+  organizationId  String
+  invoiceId       String?
+  amount          Float
+  rate            Float
+  status          String   @default("pending") // pending, paid, cancelled
+  periodStart     DateTime
+  periodEnd       DateTime
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  partner         Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice         Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([partnerId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([periodStart, periodEnd])
+}
+
+// =============================================
+// EMBED & WIDGET
+// =============================================
+
+model EmbedScript {
+  id            String   @id @default(cuid())
+  domain        String   @unique
+  allowed       Boolean  @default(true)
+  scriptVersion String   @default("1.0.0")
+  config        Json     @default("{}") // Custom colors, position, etc.
+  botId         String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  bot           Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([domain])
+}
+
+// =============================================
+// USAGE & ANALYTICS
+// =============================================
+
+model Usage {
+  id             String       @id @default(cuid())
+  organizationId String
+  date           DateTime     @db.Date
+  messages       Int          @default(0)
+  conversations  Int          @default(0)
+  leads          Int          @default(0)
+  storageMB      Int          @default(0)
+  tokensUsed     Int          @default(0)
+  apiCalls       Int          @default(0)
+  llmCost        Float        @default(0)
+  inputTokens    Int          @default(0)
+  outputTokens   Int          @default(0)
+  modelBreakdown Json         @default("{}") // Per-model breakdown
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, date])
+  @@index([organizationId])
+  @@index([date])
+}
+
+model UsageHourly {
+  id             String       @id @default(cuid())
+  organizationId String
+  hour           DateTime     @db.DateTime
+  messages       Int          @default(0)
+  conversations  Int          @default(0)
+  tokensUsed     Int          @default(0)
+  apiCalls       Int          @default(0)
+  llmCost        Float        @default(0)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, hour])
+  @@index([organizationId])
+  @@index([hour])
+}
+
+model PartnerUsage {
+  id             String   @id @default(cuid())
+  partnerId      String
+  date           DateTime @db.Date
+  totalOrgs      Int      @default(0)
+  totalBots      Int      @default(0)
+  totalMessages  Int      @default(0)
+  totalConversations Int @default(0)
+  totalLeads     Int      @default(0)
+  revenue        Float    @default(0)
+  partner        Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, date])
+  @@index([partnerId])
+  @@index([date])
+}
+
+// =============================================
+// KNOWLEDGE BASE (Enhanced)
+// =============================================
+
+model KnowledgeBase {
+  id          String           @id @default(cuid())
+  name        String
+  type        String           // "pdf", "url", "text", "faq", "sitemap", "notion", "confluence", "github"
+  source      String
+  content     String?
+  chunksCount Int              @default(0)
+  status      String           @default("processing")
+  error       String?
+  metadata    Json             @default("{}")
+  botId       String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+
+  // RAG Configuration
+  chunkSize        Int      @default(1000)
+  chunkOverlap     Int      @default(200)
+  chunkingStrategy String   @default("semantic") // "fixed", "semantic", "recursive"
+  embeddingModel   String   @default("text-embedding-3-small")
+  embeddingDim     Int      @default(1536)
+  rerankEnabled    Boolean  @default(true)
+  rerankModel      String?  @default("cohere-rerank-v3")
+  topK             Int      @default(5)
+  similarityThreshold Float @default(0.7)
+  hybridSearch     Boolean  @default(true)
+  bm25Weight       Float    @default(0.3)
+  vectorWeight     Float    @default(0.7)
+
+  bot         Bot              @relation(fields: [botId], references: [id], onDelete: Cascade)
+  chunks      KnowledgeChunk[]
+
+  @@index([botId])
+  @@index([status])
+  @@index([type])
+}
+
+model KnowledgeChunk {
+  id              String                @id @default(cuid())
+  content         String
+  embedding       Unsupported("vector")  // pgvector 1536-dim
+  chunkIndex      Int
+  tokens          Int
+  metadata        Json                  @default("{}")
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase         @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([knowledgeBaseId])
+  @@index([chunkIndex])
+}
+
+// =============================================
+// AI AGENT ORCHESTRATION
+// =============================================
+
+model AgentWorkflow {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  definition      Json     // LangGraph/Temporal workflow definition
+  version         String   @default("1.0.0")
+  isActive        Boolean  @default(true)
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model AgentExecution {
+  id              String   @id @default(cuid())
+  workflowId      String
+  status          String   @default("pending") // pending, running, completed, failed, paused
+  input           Json
+  output          Json?
+  error           String?
+  currentStep     String?
+  stepHistory     Json     @default("[]")
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorAt         DateTime?
+  retryCount      Int      @default(0)
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workflowId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// =============================================
+// AUDIT & SECURITY
+// =============================================
+
+model Activity {
+  id             String       @id @default(cuid())
+  action         ActivityAction
+  entityType     String
+  entityId       String
+  metadata       Json         @default("{}")
+  ipAddress      String?
+  userAgent      String?
+  userId         String?
+  botId          String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  bot            Bot?         @relation(fields: [botId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([botId])
+  @@index([createdAt])
+  @@index([action])
+  @@index([entityType, entityId])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  action         String
+  entityType     String
+  entityId       String
+  oldValues      Json?
+  newValues      Json?
+  changedFields  String[]
+  userId         String?
+  ipAddress      String?
+  userAgent      String?
+  organizationId String
+  requestId      String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+model SecurityEvent {
+  id             String   @id @default(cuid())
+  type           String   // "login_failed", "brute_force", "suspicious_activity", "api_abuse", "injection_attempt"
+  severity       String   // "low", "medium", "high", "critical"
+  description    String
+  ipAddress      String
+  userAgent      String?
+  userId         String?
+  organizationId String?
+  metadata       Json     @default("{}")
+  resolved       Boolean  @default(false)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
+  @@index([ipAddress])
+  @@index([resolved])
+}
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  name           String
+  keyHash        String       @unique
+  prefix         String       @unique
+  permissions    String[]     @default(["chat:read", "chat:write"])
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  organizationId String
+  userId         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lastUsedBy     String?
+  lastUsedIp     String?
+  rateLimit      Int          @default(1000) // requests per minute
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([prefix])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// =============================================
+// NOTIFICATIONS
+// =============================================
+
+model Notification {
+  id             String              @id @default(cuid())
+  type           String
+  title          String
+  message        String
+  channel        NotificationChannel
+  recipient      String
+  status         String              @default("pending") // pending, sent, delivered, failed, read
+  metadata       Json                @default("{}")
+  error          String?
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  userId         String?
+  organizationId String
+  createdAt      DateTime            @default(now())
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?               @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([organizationId])
+}
+
+model NotificationPreference {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  emailEnabled   Boolean  @default(true)
+  pushEnabled    Boolean  @default(true)
+  smsEnabled     Boolean  @default(false)
+  webhookEnabled Boolean  @default(false)
+  marketing      Boolean  @default(false)
+  security       Boolean  @default(true)
+  billing        Boolean  @default(true)
+  product        Boolean  @default(true)
+  weeklyDigest   Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// =============================================
+// VECTOR SEARCH & AI MEMORY
+// =============================================
+
+model AgentMemory {
+  id             String   @id @default(cuid())
+  agentId        String   // Bot ID or Agent ID
+  userId         String?
+  organizationId String
+  type           String   // "short_term", "long_term", "episodic", "semantic", "procedural"
+  key            String
+  value          Json
+  embedding      Unsupported("vector")? // For semantic search
+  importance     Float    @default(0.5)
+  accessCount    Int      @default(0)
+  lastAccessed   DateTime @default(now())
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([expiresAt])
+  @@unique([agentId, type, key])
+}
+
+model ConversationSummary {
+  id             String   @id @default(cuid())
+  conversationId String   @unique
+  botId          String
+  organizationId String
+  summary        String
+  keyPoints      String[]
+  entities       Json     @default("[]")
+  sentiment      String?  // "positive", "negative", "neutral"
+  topics         String[] @default([])
+  messageCount   Int      @default(0)
+  tokenCount     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([botId])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model PromptTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  version         String   @default("1.0.0")
+  template        String   // Jinja2/Liquid template
+  variables       Json     @default("[]") // Variable definitions
+  model           String   @default("gpt-4o")
+  temperature     Float    @default(0.7)
+  maxTokens       Int      @default(2000)
+  systemPrompt    String?
+  organizationId  String
+  isPublic        Boolean  @default(false)
+  tags            String[] @default([])
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([name])
+  @@index([tags])
+}
+
+model PromptVersion {
+  id              String   @id @default(cuid())
+  templateId      String
+  version         String
+  template        String
+  variables       Json
+  changelog       String?
+  createdBy       String
+  createdAt       DateTime @default(now())
+
+  @@index([templateId])
+  @@unique([templateId, version])
+}
+
+// =============================================
+// EVALUATION & TESTING
+// =============================================
+
+model EvaluationDataset {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  organizationId  String
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model EvaluationExample {
+  id              String   @id @default(cuid())
+  datasetId       String
+  input           Json
+  expectedOutput  Json
+  metadata        Json     @default("{}")
+  tags            String[] @default([])
+  createdAt       DateTime @default(now())
+
+  @@index([datasetId])
+}
+
+model EvaluationRun {
+  id              String   @id @default(cuid())
+  datasetId       String
+  promptTemplateId String?
+  model           String
+  status          String   @default("pending") // pending, running, completed, failed
+  totalExamples   Int      @default(0)
+  passedCount     Int      @default(0)
+  failedCount     Int      @default(0)
+  metrics         Json     @default("{}") // accuracy, f1, latency, cost
+  startedAt       DateTime?
+  completedAt     DateTime?
+  error           String?
+  createdAt       DateTime @default(now())
+
+  @@index([datasetId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// =============================================
+// WEBHOOKS & EVENTS
+// =============================================
+
+model Webhook {
+  id             String   @id @default(cuid())
+  name           String
+  url            String
+  secret         String
+  events         String[]
+  isActive       Boolean  @default(true)
+  retryCount     Int      @default(3)
+  timeoutMs      Int      @default(30000)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lastTriggered  DateTime?
+  lastSuccess    DateTime?
+  lastFailure    DateTime?
+  failureCount   Int      @default(0)
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  webhookId   String
+  event       String
+  payload     Json
+  response    Json?
+  statusCode  Int?
+  error       String?
+  attempt     Int      @default(1)
+  nextRetry   DateTime?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@index([statusCode])
+}
+
+// =============================================
+// SETTINGS & CONFIGURATION
+// =============================================
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  category    String   @default("general")
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
+model FeatureFlag {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  name          String
+  description   String?
+  enabled       Boolean  @default(false)
+  rollout       Float    @default(0) // 0-100 percentage
+  targeting     Json     @default("{}") // User/org targeting rules
+  environments  String[] @default(["production"])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([enabled])
+  @@index([environments])
+}
+
+// =============================================
+// VIEWS (for analytics)
+// =============================================
+
+// These would be created as PostgreSQL views
+// Included here for documentation
+
+/*
+CREATE VIEW organization_monthly_usage AS
+SELECT 
+  o.id as organization_id,
+  o.name as organization_name,
+  o.plan,
+  date_trunc('month', u.date) as month,
+  SUM(u.messages) as total_messages,
+  SUM(u.conversations) as total_conversations,
+  SUM(u.leads) as total_leads,
+  SUM(u.tokens_used) as total_tokens,
+  SUM(u.llm_cost) as total_cost
+FROM usage u
+JOIN organizations o ON o.id = u.organization_id
+GROUP BY o.id, o.name, o.plan, date_trunc('month', u.date);
+
+CREATE VIEW bot_performance AS
+SELECT 
+  b.id as bot_id,
+  b.name as bot_name,
+  b.organization_id,
+  COUNT(DISTINCT c.id) as total_conversations,
+  COUNT(m.id) as total_messages,
+  AVG(c.message_count) as avg_messages_per_conversation,
+  AVG(c.rating) as avg_rating,
+  AVG(c.avg_response_time) as avg_response_time,
+  COUNT(l.id) as total_leads
+FROM bots b
+LEFT JOIN conversations c ON c.bot_id = b.id
+LEFT JOIN messages m ON m.conversation_id = c.id
+LEFT JOIN leads l ON l.bot_id = b.id
+GROUP BY b.id, b.name, b.organization_id;
+
+CREATE VIEW partner_revenue AS
+SELECT 
+  p.id as partner_id,
+  p.name as partner_name,
+  date_trunc('month', i.paid_at) as month,
+  SUM(i.amount) as total_revenue,
+  SUM(pc.amount) as partner_commission,
+  COUNT(DISTINCT i.organization_id) as active_organizations
+FROM partners p
+LEFT JOIN organizations o ON o.partner_id = p.id
+LEFT JOIN invoices i ON i.organization_id = o.id AND i.status = 'paid'
+LEFT JOIN partner_commissions pc ON pc.invoice_id = i.id AND pc.partner_id = p.id
+WHERE i.status = 'paid'
+GROUP BY p.id, p.name, date_trunc('month', i.paid_at);
+*/

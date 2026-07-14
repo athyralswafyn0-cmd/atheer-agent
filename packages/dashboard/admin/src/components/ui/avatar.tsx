@@ -1,18 +1,27 @@
+'use client';
+
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-const Avatar = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+interface AvatarProps extends React.ComponentPropsWithoutRef<'div'> {}
+
+const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
   ({ className, ...props }, ref) => (
-    <span
+    <div
       ref={ref}
-      className={cn('relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full', className)}
+      className={cn(
+        'relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full',
+        className
+      )}
       {...props}
     />
   )
 );
 Avatar.displayName = 'Avatar';
 
-const AvatarImage = React.forwardRef<HTMLImageElement, React.ImgHTMLAttributes<HTMLImageElement>>(
+interface AvatarImageProps extends React.ComponentPropsWithoutRef<'img'> {}
+
+const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
   ({ className, ...props }, ref) => (
     <img
       ref={ref}
@@ -23,11 +32,16 @@ const AvatarImage = React.forwardRef<HTMLImageElement, React.ImgHTMLAttributes<H
 );
 AvatarImage.displayName = 'AvatarImage';
 
-const AvatarFallback = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+interface AvatarFallbackProps extends React.ComponentPropsWithoutRef<'div'> {}
+
+const AvatarFallback = React.forwardRef<HTMLDivElement, AvatarFallbackProps>(
   ({ className, ...props }, ref) => (
-    <span
+    <div
       ref={ref}
-      className={cn('flex h-full w-full items-center justify-center rounded-full bg-muted', className)}
+      className={cn(
+        'flex h-full w-full items-center justify-center rounded-full bg-muted',
+        className
+      )}
       {...props}
     />
   )

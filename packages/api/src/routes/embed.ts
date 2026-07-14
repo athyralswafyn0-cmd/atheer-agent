@@ -19,6 +19,7 @@ export const embedRoutes: FastifyPluginAsync = async (app) => {
         primaryColor: true,
         language: true,
         fallbackMessage: true,
+        model: true,
       },
     });
 
