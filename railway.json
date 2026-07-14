@@ -1,10 +1,8 @@
 {
   "build": {
-    "command": "cd packages/api && pnpm install && pnpm run build",
-    "builder": "NIXPACKS",
-    "buildEnvironment": "V3"
+    "dockerfile": "packages/api/Dockerfile"
   },
   "start": {
-    "command": "cd packages/api && npx prisma generate && PORT=8080 node dist/index.js"
+    "command": "node packages/api/dist/index.js"
   }
 }
