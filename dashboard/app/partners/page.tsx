@@ -19,18 +19,18 @@ interface Partner {
 }
 
 export default function PartnersPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     async function fetchPartners() {
-      if (!user) return;
+      if (!user || !token) return;
       try {
-        const res = await fetch('http://localhost:3001/api/v1/partners', {
+        const res = await fetch('https://atheer-agent-api.onrender.com/api/v1/partners', {
           headers: {
-            Authorization: `Bearer ${user.accessToken}`,
+            Authorization: `Bearer ${token}`,
           },
         });
         
@@ -45,7 +45,7 @@ export default function PartnersPage() {
       }
     }
     
-    if (user) fetchPartners();
+    if (user && token) fetchPartners();
   }, [user]);
 
   if (loading) {

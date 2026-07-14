@@ -12,6 +12,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: { name: string; email: string; password: string; organizationName?: string }) => Promise<void>;
@@ -22,12 +23,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      fetch('/api/v1/auth/me', {
+      fetch('https://atheer-agent-api.onrender.com/api/v1/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => res.json())
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/v1/auth/login', {
+    const response = await fetch('https://atheer-agent-api.onrender.com/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -59,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: { name: string; email: string; password: string; organizationName?: string }) => {
-    const response = await fetch('/api/v1/auth/register', {
+    const response = await fetch('https://atheer-agent-api.onrender.com/api/v1/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -81,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -92,3 +94,5 @@ export const useSession = () => {
   if (!context) throw new Error('useSession must be used within AuthProvider');
   return context;
 };
+
+export const useAuth = useSession;

@@ -26,7 +26,7 @@ export default function OrganizationsPage() {
   useEffect(() => {
     async function fetchOrganizations() {
       try {
-        const res = await fetch('http://localhost:3001/api/v1/organizations', {
+        const res = await fetch('https://atheer-agent-api.onrender.com/api/v1/organizations', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

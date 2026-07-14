@@ -27,7 +27,7 @@ export default function PartnerDetailPage() {
   useEffect(() => {
     async function fetchPartner() {
       try {
-        const res = await fetch(`http://localhost:3001/api/v1/partners/${id}`);
+        const res = await fetch(`https://atheer-agent-api.onrender.com/api/v1/partners/${id}`);
         if (!res.ok) throw new Error('Failed to fetch partner');
         const data = await res.json();
         setPartner(data);
@@ -80,7 +80,6 @@ export default function PartnerDetailPage() {
           <p className="text-red-500">Partner not found</p>
           <button 
             onClick={() => window.location.href = '/partners'}
-            /partners"}
             className="mt-4 btn btn-glass"
           >
             Back to Partners
