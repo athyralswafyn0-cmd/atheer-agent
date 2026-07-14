@@ -1,10 +1,10 @@
 {
   "build": {
-    "command": "npm ci && npm run build",
+    "command": "cd packages/api && pnpm install && pnpm run build",
     "builder": "NIXPACKS",
     "buildEnvironment": "V3"
   },
   "start": {
-    "command": "npx prisma generate && PORT=8080 npm start"
+    "command": "cd packages/api && npx prisma generate && PORT=8080 node dist/index.js"
   }
 }
