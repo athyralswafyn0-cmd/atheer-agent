@@ -9,6 +9,7 @@ const createBotSchema = z.object({
     secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
     position: z.enum(['bottom-right', 'bottom-left', 'top-right', 'top-left']).optional(),
     language: z.string().optional(),
+    model: z.enum(['gpt-4-turbo-preview', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'gemini-1.5-pro', 'gemini-1.5-flash', 'llama-3.1-405b', 'llama-3.1-70b', 'llama-3.1-8b', 'mixtral-8x7b', 'mistral-large', 'mistral-small']).optional(),
     notifyOnLead: z.boolean().optional(),
     notificationChannels: z.array(z.enum(['EMAIL', 'TELEGRAM', 'SLACK', 'WEBHOOK'])).optional(),
     notificationEmails: z.array(z.string().email()).optional(),
