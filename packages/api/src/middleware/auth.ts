@@ -33,10 +33,13 @@ export const authMiddleware = (app: FastifyInstance) => {
       }
 
       const token = authHeader.substring(7);
-      const decoded = app.jwt.verify(token) as { userId: string; organizationId: string; role: string };
+      const decoded = app.jwt.verify(token) as { id: string; userId?: string; organizationId: string; role: string };
+      
+      // Support both 'id' and 'userId' for backward compatibility
+      const userId = decoded.userId || decoded.id;
       
       const user = await app.prisma!.user.findUnique({
-        where: { id: decoded.userId },
+        where: { id: userId },
         select: { id: true, email: true, name: true, role: true, organizationMembers: { take: 1, select: { organizationId: true } } },
       });
 
