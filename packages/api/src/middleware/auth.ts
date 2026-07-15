@@ -31,32 +31,26 @@ export const authMiddleware = (app: FastifyInstance) => {
       }
 
       const token = authHeader.substring(7);
-      const decoded = app.jwt.verify(token) as { id: string; userId?: string; organizationId: string; role: string };
-
-      // Support both 'id' and 'userId' for backward compatibility
+      const decoded = app.jwt.verify(token) as { userId?: string; id?: string; organizationId: string; role: string };
       const userId = decoded.userId || decoded.id;
+
+      if (!userId) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Invalid token: missing user id' });
+      }
 
       const user = await app.prisma!.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true, name: true, role: true, organizationMembers: { take: 1, select: { organizationId: true } } },
+        select: { id: true, email: true, name: true, role: true },
       });
 
       if (!user) {
         return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'User not found' });
       }
 
-      let organizationId: string | null = null;
-      if (user.organizationMembers.length > 0) {
-        organizationId = user.organizationMembers[0].organizationId;
-      } else {
-        // Fallback to the organizationId from the token (in case there was an issue with the database query or recent creation)
-        organizationId = decoded.organizationId;
-      }
-
       request.user = {
         id: user.id,
         userId: user.id,
-        organizationId,
+        organizationId: decoded.organizationId,
         role: user.role,
       };
     } catch (err) {
