@@ -152,7 +152,7 @@ export function createAuthModule(context: any) {
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'OAuth callback failed'));
+        throw new Error(error.error || 'OAuth callback failed');
       }
       return response.json();
     },
