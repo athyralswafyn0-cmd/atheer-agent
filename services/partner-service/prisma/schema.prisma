@@ -1,0 +1,80 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Partner {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  passwordHash String?
+  isActive  Boolean  @default(true)
+  licenseId String?  @unique
+  brandId   String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand         Brand?         @relation("PartnerBrand", fields: [brandId], references: [id])
+  license       License?       @relation("PartnerLicense", fields: [licenseId], references: [id])
+  organizations Organization[] @relation("OrganizationPartners")
+
+  @@index([email])
+}
+
+model License {
+  id                   String        @id @default(uuid())
+  plan                 String
+  partnerId            String        @unique
+  expiresAt            DateTime
+  maxOrganizations     Int           @default(10)
+  maxBots              Int           @default(50)
+  maxUsers             Int           @default(100)
+  maxMessages          Int           @default(100000)
+  maxStorage           Int           @default(10000)
+  status               String        @default("active")
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  partner              Partner       @relation("PartnerLicense", fields: [partnerId], references: [id])
+  organization         Organization? @relation("LicenseOrganization", fields: [id], references: [id])
+
+  @@index([partnerId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model Brand {
+  id              String        @id @default(uuid())
+  partnerId       String?       @unique
+  organizationId  String?       @unique
+  logo            String?
+  favicon         String?
+  brandName       String?
+  primaryColor    String        @default("#2563eb")
+  secondaryColor  String        @default("#ffffff")
+  font            String?
+  emailSender     String?
+  supportEmail    String?
+  supportPhone    String?
+  customDomain    String?       @unique
+  privacyPolicy   String?
+  terms           String?
+  footer          String?
+  loginBackground String?
+  faviconDark     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  partner         Partner?      @relation("PartnerBrand", fields: [partnerId], references: [id])
+  organization    Organization? @relation("BrandOrganization", fields: [organizationId], references: [id])
+
+  @@index([partnerId])
+  @@index([organizationId])
+  @@index([customDomain])
+}

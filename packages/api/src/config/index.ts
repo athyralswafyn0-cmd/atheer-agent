@@ -30,6 +30,7 @@ export const config = {
   GOOGLE_AI_EMBEDDING_MODEL: process.env.GOOGLE_AI_EMBEDDING_MODEL || 'text-embedding-004',
 
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+  TENANT_SERVICE_URL: process.env.TENANT_SERVICE_URL || 'http://localhost:3002',
 
   EMAIL_HOST: process.env.EMAIL_HOST || '',
   EMAIL_PORT: parseInt(process.env.EMAIL_PORT || '587', 10),
@@ -46,4 +47,8 @@ export const config = {
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   WIDGET_CDN_URL: process.env.WIDGET_CDN_URL || 'http://localhost:8080/widget',
+  BOT_SERVICE_URL: process.env.BOT_SERVICE_URL || 'http://localhost:3004',
+  CONVERSATION_SERVICE_URL: process.env.CONVERSATION_SERVICE_URL || 'http://localhost:3005',
+  WIDGET_SERVICE_URL: process.env.WIDGET_SERVICE_URL || 'http://localhost:3006',
+  PARTNER_SERVICE_URL: process.env.PARTNER_SERVICE_URL || 'http://localhost:3003',
 };
