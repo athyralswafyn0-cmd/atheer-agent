@@ -37,7 +37,6 @@ model User {
   accounts             Account[]
   activities           Activity[]
   apiKeys              ApiKey[]
-  bots                 Bot[]               @relation("BotCreated")
   notifications        Notification[]
   organizationMembers  OrganizationMember[]
   sessions             Session[]
@@ -209,7 +208,6 @@ model Bot {
   activities           Activity[]
   organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   owner                User                  @relation("BotOwner", fields: [ownerId], references: [id], map: "Bot_owner_fkey")
-  createdBy            User                  @relation("BotCreated", fields: [ownerId], references: [id], map: "Bot_createdBy_fkey")
   conversations        Conversation[]
   embedScripts         EmbedScript?
   knowledgeBases       KnowledgeBase[]
