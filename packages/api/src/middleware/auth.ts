@@ -38,10 +38,15 @@ export const authMiddleware = (app: FastifyInstance) => {
         return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Invalid token: missing user id' });
       }
 
+      console.log(`[AUTH MIDDLEWARE] Looking for user with id: ${userId}`);
       const user = await app.prisma!.user.findUnique({
         where: { id: userId },
         select: { id: true, email: true, name: true, role: true },
       });
+      console.log(`[AUTH MIDDLEWARE] User found: ${user ? 'yes' : 'no'}`);
+      if (!user) {
+        return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'User not found' });
+      }
 
       if (!user) {
         return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'User not found' });
