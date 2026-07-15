@@ -23,12 +23,20 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: "7d"
-      - key: OPENAI_API_KEY
+      # AI Providers - Groq (Free Llama 3.1 70B) + Google AI (Free Gemini 1.5 Flash)
+      - key: GROQ_API_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: "gpt-4o"
-      - key: OPENAI_EMBEDDING_MODEL
-        value: "text-embedding-3-small"
+      - key: GROQ_MODEL
+        value: "llama-3.1-70b-versatile"
+      - key: GOOGLE_AI_API_KEY
+        sync: false
+      - key: GOOGLE_AI_MODEL
+        value: "gemini-1.5-flash"
+      # Embeddings via Google AI
+      - key: EMBEDDING_PROVIDER
+        value: "google"
+      - key: EMBEDDING_MODEL
+        value: "text-embedding-004"
       - key: REDIS_URL
         value: ""
       - key: FRONTEND_URL
