@@ -7,7 +7,7 @@ services:
     buildCommand: |
       cd packages/api && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm run build
     startCommand: |
-      cd packages/api && npx prisma generate && npx prisma db push && PORT=10000 pnpm start
+      cd packages/api && npx prisma generate && npx prisma db push --accept-data-loss && PORT=10000 pnpm start
     envVars:
       - key: NODE_ENV
         value: production
