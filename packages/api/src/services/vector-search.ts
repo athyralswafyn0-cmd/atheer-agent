@@ -8,28 +8,46 @@ export class VectorSearchService {
     this.prisma = prisma;
   }
 
+  /**
+   * Calculate cosine similarity between two vectors
+   */
+  private cosineSimilarity(vecA: number[], vecB: number[]): number {
+    if (vecA.length !== vecB.length) return 0;
+    
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+    
+    if (normA === 0 || normB === 0) return 0;
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
   async addChunks(chunks: Array<{
     knowledgeBaseId: string;
     content: string;
     chunkIndex: number;
     embedding: number[];
+    tokens: number;
     metadata?: Record<string, any>;
   }>) {
-    // Use raw SQL since embedding is an unsupported type (pgvector)
-    const query = `
-      INSERT INTO "KnowledgeChunk" ("knowledgeBaseId", content, "chunkIndex", embedding, metadata, "createdAt")
-      VALUES ${chunks.map((_, i) => `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}::vector, $${i * 6 + 5}, NOW())`).join(', ')}
-    `;
-    
-    const params = chunks.flatMap(c => [
-      c.knowledgeBaseId,
-      c.content,
-      c.chunkIndex,
-      `[${c.embedding.join(',')}]`,
-      JSON.stringify(c.metadata || {}),
-    ]);
-    
-    return this.prisma.$executeRawUnsafe(query, ...params);
+    // Store embeddings as JSON array instead of pgvector
+    return this.prisma.knowledgeChunk.createMany({
+      data: chunks.map(c => ({
+        knowledgeBaseId: c.knowledgeBaseId,
+        content: c.content,
+        chunkIndex: c.chunkIndex,
+        embedding: c.embedding, // Prisma will serialize JSON array automatically
+        tokens: c.tokens,
+        metadata: c.metadata || {},
+      })),
+      skipDuplicates: false,
+    });
   }
 
   async searchSimilar(params: {
@@ -41,47 +59,56 @@ export class VectorSearchService {
   }) {
     const { botId, queryEmbedding, limit = 5, threshold = 0.7, knowledgeBaseIds } = params;
 
-    // Build the query with pgvector
-    const whereClause = knowledgeBaseIds?.length
-      ? `WHERE kb."botId" = $1 AND kc."knowledgeBaseId" IN (${knowledgeBaseIds.map((_, i) => `$${i + 2}`).join(',')})`
-      : 'WHERE kb."botId" = $1';
+    // Fetch all chunks for the bot (or filtered by knowledgeBaseIds)
+    // In production, consider pagination for large datasets
+    const whereClause: any = {
+      knowledgeBase: {
+        botId,
+      },
+    };
 
-    const params_list = knowledgeBaseIds
-      ? [botId, ...knowledgeBaseIds]
-      : [botId];
+    if (knowledgeBaseIds?.length) {
+      whereClause.knowledgeBaseId = { in: knowledgeBaseIds };
+    }
 
-    const query = `
-      SELECT 
-        kc.id,
-        kc.content,
-        kc.metadata,
-        kb.name as "knowledgeBaseName",
-        kb.type as "knowledgeBaseType",
-        1 - (kc.embedding <=> $${params_list.length + 1}::vector) as similarity
-      FROM "KnowledgeChunk" kc
-      JOIN "KnowledgeBase" kb ON kc."knowledgeBaseId" = kb.id
-      ${whereClause}
-        AND 1 - (kc.embedding <=> $${params_list.length + 1}::vector) > $${params_list.length + 2}
-      ORDER BY similarity DESC
-      LIMIT $${params_list.length + 3}
-    `;
+    const chunks = await this.prisma.knowledgeChunk.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        content: true,
+        embedding: true,
+        metadata: true,
+        knowledgeBase: {
+          select: {
+            name: true,
+            type: true,
+          },
+        },
+      },
+    });
 
-    const results = await this.prisma.$queryRawUnsafe(
-      query,
-      ...params_list,
-      `[${queryEmbedding.join(',')}]`,
-      threshold,
-      limit
-    );
+    // Calculate cosine similarity in JavaScript
+    const results = chunks
+      .map(chunk => {
+        const embedding = chunk.embedding as number[] | null;
+        if (!embedding || embedding.length === 0) {
+          return null;
+        }
+        const similarity = this.cosineSimilarity(queryEmbedding, embedding);
+        return {
+          id: chunk.id,
+          content: chunk.content,
+          metadata: chunk.metadata as Record<string, any>,
+          knowledgeBaseName: chunk.knowledgeBase.name,
+          knowledgeBaseType: chunk.knowledgeBase.type,
+          similarity,
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null && r.similarity > threshold)
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
 
-    return results as Array<{
-      id: string;
-      content: string;
-      metadata: Record<string, any>;
-      knowledgeBaseName: string;
-      knowledgeBaseType: string;
-      similarity: number;
-    }>;
+    return results;
   }
 
   async hybridSearch(params: {
@@ -94,7 +121,7 @@ export class VectorSearchService {
   }) {
     const { botId, query, queryEmbedding, limit = 5, keywordWeight = 0.3, vectorWeight = 0.7 } = params;
 
-    // Vector search
+    // Vector search (using JS cosine similarity)
     const vectorResults = await this.searchSimilar({
       botId,
       queryEmbedding,

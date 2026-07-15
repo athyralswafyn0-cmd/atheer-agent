@@ -244,7 +244,7 @@ model KnowledgeBase {
 model KnowledgeChunk {
   id              String                @id @default(cuid())
   content         String
-  embedding       Unsupported("vector")
+  embedding       Json?                 // Store embeddings as JSON array for pgvector-free deployments
   chunkIndex      Int
   tokens          Int
   metadata        Json                  @default("{}")
