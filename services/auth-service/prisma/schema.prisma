@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+  PARTNER_ADMIN
+  PARTNER_VIEWER
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  status    OrganizationStatus @default(ACTIVE)
+  members   OrganizationMember[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  organizationId String
+  role           UserRole     @default(MEMBER)
+  joinedAt       DateTime     @default(now())
+  invitedBy      String?
+  invitedAt      DateTime?
+  acceptedAt     DateTime?
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  passwordHash          String?
+  name                  String?
+  avatar                String?
+  role                  UserRole  @default(MEMBER)
+  emailVerified         DateTime?
+  emailVerificationToken String?   @unique
+  emailVerificationExpires DateTime?
+  lastLoginAt           DateTime?
+  lastLoginIp           String?
+  loginAttempts         Int       @default(0)
+  lockedUntil           DateTime?
+  passwordResetToken    String?   @unique
+  passwordResetExpires  DateTime?
+  twoFactorSecret       String?
+  twoFactorEnabled      Boolean   @default(false)
+  backupCodes           String[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+  lastPasswordChange    DateTime  @default(now())
+  preferredLanguage     String    @default("ar")
+  timezone              String    @default("UTC")
+  organizationId        String?
+
+  accounts              Account[]
+  sessions              Session[]
+  organizationMembers   OrganizationMember?
+  passwordResetTokens   PasswordResetToken[]
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([role])
+  @@index([deletedAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ipAddress    String?
+  userAgent    String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expires   DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  action         String   // login, logout, password_change, etc.
+  entityType     String   // user, organization, etc.
+  entityId       String?
+  organizationId String?
+  userId         String?
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([createdAt])
+}

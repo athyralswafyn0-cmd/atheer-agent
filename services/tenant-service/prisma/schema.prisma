@@ -1,0 +1,82 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["filterJson", "generateJson", "emitJson"]
+  output          = "../node_modules/@prisma/client"
+}
+
+model Organization {
+  id               String   @id @default(uuid())
+  name             String
+  userId           String
+  logo             String?  @db.Text
+  primaryDomain    String?  @db.Text
+  customDomains    String[] @db.Text
+  stripeAccount    String?  @db.Text
+  firebaseConfig   Json?    @db.Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  members          OrganizationMember[]
+  brands           Brand[]
+}
+
+model OrganizationMember {
+  id        String   @id @default(uuid())
+  userId    String
+  organizationId String
+  role      String
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Brand {
+  id        String   @id @default(uuid())
+  orgId     String
+  domain    String   @unique
+  logo      String?  @db.Text
+  theme     Json?    @db.Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String?
+  image        String?
+  createdAt    DateTime @default(now())
+  organizations  OrganizationMember[]
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  revoked      Boolean  @default(false)
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Optional Invitation model
+model Invitation {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  role        String
+  organizationId String
+  invitedBy   String
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  acceptedAt  DateTime?
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}

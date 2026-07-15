@@ -1,0 +1,229 @@
+import { FastifyInstance } from 'fastify';
+import { AuthService } from '../modules/auth/service.js';
+import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, resetPasswordSchema, forgotPasswordSchema } from '../modules/auth/schemas.js';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+
+export async function authRoutes(app: FastifyInstance) {
+  const authService = new AuthService(app.prisma);
+
+  // POST /api/v1/auth/register
+  app.post('/auth/register', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['email', 'password', 'name'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string', minLength: 8, maxLength: 128 },
+          name: { type: 'string', minLength: 2, maxLength: 100 },
+          organizationName: { type: 'string', minLength: 2, maxLength: 100 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      const result = await authService.register(request.body as any);
+
+      const accessToken = signAccessToken({
+        userId: result.user.id,
+        organizationId: result.user.organizationId,
+        role: result.user.role,
+        email: result.user.email,
+      });
+
+      const refreshToken = signRefreshToken(result.user.id);
+
+      return reply.code(201).send({
+        user: result.user,
+        tokens: {
+          accessToken,
+          refreshToken,
+          expiresIn: 7 * 24 * 60 * 60,
+        },
+      });
+    } catch (error: any) {
+      if (error.message === 'EMAIL_ALREADY_REGISTERED') {
+        return reply.code(409).send({ error: 'Email already registered' });
+      }
+      throw error;
+    }
+  });
+
+  // POST /api/v1/auth/login
+  app.post('/auth/login', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['email', 'password'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string', minLength: 1 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      const result = await authService.login(request.body as any);
+
+      const accessToken = signAccessToken({
+        userId: result.user.id,
+        organizationId: result.user.organizationId,
+        role: result.user.role,
+        email: result.user.email,
+      });
+
+      const refreshToken = signRefreshToken(result.user.id);
+
+      return {
+        user: result.user,
+        tokens: {
+          accessToken,
+          refreshToken,
+          expiresIn: 7 * 24 * 60 * 60,
+        },
+      };
+    } catch (error: any) {
+      if (error.message === 'INVALID_CREDENTIALS') {
+        return reply.code(401).send({ error: 'Invalid credentials' });
+      }
+      throw error;
+    }
+  });
+
+  // POST /api/v1/auth/refresh
+  app.post('/auth/refresh', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['refreshToken'],
+        properties: {
+          refreshToken: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { refreshToken } = request.body as { refreshToken: string };
+
+    const decoded = verifyRefreshToken(refreshToken);
+    if (!decoded) {
+      return reply.code(401).send({ error: 'Invalid or expired refresh token' });
+    }
+
+    const user = await app.prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user) {
+      return reply.code(401).send({ error: 'User not found' });
+    }
+
+    const accessToken = signAccessToken({
+      userId: user.id,
+      organizationId: user.organizationId,
+      role: user.role,
+      email: user.email,
+    });
+
+    const newRefreshToken = signRefreshToken(user.id);
+
+    return { accessToken, refreshToken: newRefreshToken, expiresIn: 7 * 24 * 60 * 60 };
+  });
+
+  // POST /api/v1/auth/logout
+  app.post('/auth/logout', {
+    preHandler: [app.authenticate],
+  }, async (request, reply) => {
+    await authService.logout(request.user.userId);
+    return { message: 'Logged out successfully' };
+  });
+
+  // POST /api/v1/auth/forgot-password
+  app.post('/auth/forgot-password', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    await authService.requestPasswordReset(request.body as any);
+    return { message: 'If your email is registered, you will receive a password reset link' };
+  });
+
+  // POST /api/v1/auth/reset-password
+  app.post('/auth/reset-password', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['token', 'password'],
+        properties: {
+          token: { type: 'string' },
+          password: { type: 'string', minLength: 8, maxLength: 128 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      await authService.resetPassword(request.body as any);
+      return { message: 'Password has been reset' };
+    } catch (error: any) {
+      if (error.message === 'INVALID_OR_EXPIRED_TOKEN') {
+        return reply.code(400).send({ error: 'Invalid or expired token' });
+      }
+      throw error;
+    }
+  });
+
+  // POST /api/v1/auth/change-password
+  app.post('/auth/change-password', {
+    preHandler: [app.authenticate],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['currentPassword', 'newPassword'],
+        properties: {
+          currentPassword: { type: 'string', minLength: 1 },
+          newPassword: { type: 'string', minLength: 8, maxLength: 128 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      await authService.changePassword(request.user.userId, request.body as any);
+      return { message: 'Password changed successfully' };
+    } catch (error: any) {
+      if (error.message === 'CURRENT_PASSWORD_INCORRECT') {
+        return reply.code(400).send({ error: 'Current password is incorrect' });
+      }
+      if (error.message === 'USER_NOT_FOUND') {
+        return reply.code(404).send({ error: 'User not found' });
+      }
+      throw error;
+    }
+  });
+
+  // GET /api/v1/auth/sessions
+  app.get('/auth/sessions', {
+    preHandler: [app.authenticate],
+  }, async (request, reply) => {
+    const sessions = await authService.getUserSessions(request.user.userId);
+    return { sessions };
+  });
+
+  // DELETE /api/v1/auth/sessions/:sessionId
+  app.delete('/auth/sessions/:sessionId', {
+    preHandler: [app.authenticate],
+  }, async (request, reply) => {
+    const { sessionId } = request.params as { sessionId: string };
+    await authService.revokeSession(request.user.userId, sessionId);
+    return { message: 'Session revoked' };
+  });
+
+  // DELETE /api/v1/auth/sessions
+  app.delete('/auth/sessions', {
+    preHandler: [app.authenticate],
+  }, async (request, reply) => {
+    await authService.revokeAllSessions(request.user.userId);
+    return { message: 'All sessions revoked' };
+  });
+}

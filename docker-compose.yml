@@ -1,316 +1,58 @@
-version: '3.8'
-
 services:
-  # ============================================================================
-  # API SERVICE
-  # ============================================================================
-  api:
-    build:
-      context: .
-      dockerfile: packages/api/Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - NODE_ENV=development
-      - PORT=8080
-      - HOST=0.0.0.0
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/atheer_agent
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
-      - JWT_EXPIRES_IN=7d
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=gpt-4o
-      - OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
-      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
-      - PAYPAL_WEBHOOK_SECRET=${PAYPAL_WEBHOOK_SECRET}
-      - FRONTEND_URL=http://localhost:3000
-      - WIDGET_CDN_URL=http://localhost:8080/widget
-      - OTEL_ENABLED=false
-      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
-      - CACHE_DEFAULT_TTL=300
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - atheer-network
-    volumes:
-      - ./packages/api:/app/packages/api:ro
-      - ./packages/api/dist:/app/dist:ro
-      - ./packages/api/prisma:/app/prisma:ro
-
-  # ============================================================================
-  # POSTGRESQL DATABASE
-  # ============================================================================
-  postgres:
-    image: pgvector/pgvector:pg16
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=atheer_agent
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./packages/api/prisma/migrations:/docker-entrypoint-initdb.d/migrations:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d atheer_agent"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - atheer-network
-    command: >
-      postgres
-      -c shared_preload_libraries=pg_stat_statements
-      -c max_connections=200
-      -c shared_buffers=256MB
-      -c effective_cache_size=1GB
-      -c work_mem=16MB
-      -c maintenance_work_mem=64MB
-
-  # ============================================================================
-  # REDIS
-  # ============================================================================
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - atheer-network
-
-  # ============================================================================
-  # JAEGER (Distributed Tracing)
-  # ============================================================================
-  jaeger:
-    image: jaegertracing/all-in-one:1.53
-    ports:
-      - "16686:16686"  # UI
-      - "14268:14268"  # Collector HTTP
-      - "6831:6831/udp" # Agent UDP
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-      - SPAN_STORAGE_TYPE=badger
-    networks:
-      - atheer-network
-    profiles:
-      - tracing
-
-  # ============================================================================
-  # KAFKA / REDPANDA (Event Streaming)
-  # ============================================================================
-  redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:v23.3.10
-    ports:
-      - "9092:9092"
-      - "9644:9644"
-    command:
-      - redpanda
-      - start
-      - --kafka-addr PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:9644
-      - --advertise-kafka-addr PLAINTEXT://redpanda:9092,OUTSIDE://localhost:9644
-      - --smp=1
-      - --memory=1G
-      - --reserve-memory=0M
-      - --overprovisioned
-      - --check=false
-    volumes:
-      - redpanda-data:/var/lib/redpanda/data
-    networks:
-      - atheer-network
-    profiles:
-      - messaging
-
-  # ============================================================================
-  # CLICKHOUSE (Analytics)
-  # ============================================================================
-  clickhouse:
-    image: clickhouse/clickhouse-server:23.8
-    ports:
-      - "8123:8123"  # HTTP
-      - "9000:9000"  # Native
-    environment:
-      - CLICKHOUSE_DB=analytics
-      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
-      - CLICKHOUSE_USER=clickhouse
-      - CLICKHOUSE_PASSWORD=clickhouse
-    volumes:
-      - clickhouse-data:/var/lib/clickhouse
-    ulimits:
-      nofile:
-        soft: 262144
-        hard: 262144
-    networks:
-      - atheer-network
-    profiles:
-      - analytics
-
-  # ============================================================================
-  # MINIO (S3-compatible Object Storage)
-  # ============================================================================
-  minio:
-    image: minio/minio:latest
-    ports:
-      - "9000:9000"   # API
-      - "9001:9001"   # Console
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    volumes:
-      - minio-data:/data
-    command: server /data --console-address ":9001"
-    networks:
-      - atheer-network
-    profiles:
-      - storage
-
-  # ============================================================================
-  # PROMETHEUS + GRAFANA (Monitoring)
-  # ============================================================================
-  prometheus:
-    image: prom/prometheus:v2.47
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
-      - '--web.enable-lifecycle'
-    networks:
-      - atheer-network
-    profiles:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:10.1
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-      - grafana-data:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - atheer-network
-    profiles:
-      - monitoring
-
-  # ============================================================================
-  # MAILHOG (Email Testing)
-  # ============================================================================
-  mailhog:
-    image: mailhog/mailhog:latest
-    ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
-    networks:
-      - atheer-network
-    profiles:
-      - dev-tools
-
-  # ============================================================================
-  # PGADMIN (Database Management)
-  # ============================================================================
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    ports:
-      - "5050:80"
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@atheer-agent.com
-      - PGADMIN_DEFAULT_PASSWORD=admin
-      - PGADMIN_CONFIG_SERVER_MODE=False
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    depends_on:
-      - postgres
-    networks:
-      - atheer-network
-    profiles:
-      - dev-tools
-
-  # ============================================================================
-  # KONG API GATEWAY
-  # ============================================================================
   kong:
-    image: kong:3.4
+    image: kong:latest
+    container_name: kong
     ports:
-      - "8000:8000"      # HTTP proxy
-      - "8443:8443"      # HTTPS proxy
-      - "8001:8001"      # Admin API
-      - "8444:8444"      # Admin API HTTPS
+      - "8000:8000"
+      - "8001:8001"
+      - "8443:8443"
+      - "8444:8444"
     environment:
-      - KONG_DATABASE=postgres
-      - KONG_PG_HOST=kong-db
-      - KONG_PG_PORT=5432
-      - KONG_PG_USER=kong
-      - KONG_PG_PASSWORD=kong
-      - KONG_PG_DATABASE=kong
-      - KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/kong/kong.yml
       - KONG_PROXY_ACCESS_LOG=/dev/stdout
       - KONG_ADMIN_ACCESS_LOG=/dev/stdout
       - KONG_PROXY_ERROR_LOG=/dev/stderr
       - KONG_ADMIN_ERROR_LOG=/dev/stderr
-      - KONG_ADMIN_LISTEN=0.0.0.0:8001
-      - KONG_PLUGINS=bundled,rate-limiting,key-auth,jwt,correlation-id,response-transformer,request-transformer,acl,bot-detection
-      - KONG_LOG_LEVEL=info
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
     volumes:
-      - ./kong/declarative:/kong/declarative:ro
-    depends_on:
-      kong-db:
-        condition: service_healthy
+      - ./kong:/kong
+      - ./kong/kong.yml:/kong/kong.yml
     networks:
       - atheer-network
-    healthcheck:
-      test: ["CMD", "kong", "health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  kong-db:
-    image: postgres:16
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
     environment:
-      - POSTGRES_USER=kong
-      - POSTGRES_PASSWORD=kong
-      - POSTGRES_DB=kong
-    volumes:
-      - kong-db-data:/var/lib/postgresql/data
+      - DATABASE_URL=postgresql://user:password@auth-db:5432/auth_db?schema=public
+      - JWT_SECRET=${JWT_SECRET:-supersecretkeychangemeinproduction}
+      - PORT=3001
+      - HOST=0.0.0.0
+      - NODE_ENV=development
+    ports:
+      - "3001:3001"
+    depends_on:
+      - auth-db
     networks:
       - atheer-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kong -d kong"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=auth_db
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+      - ./auth-db-data:/var/lib/postgresql/data
+    networks:
+      - atheer-network
 
 networks:
   atheer-network:
     driver: bridge
 
 volumes:
-  postgres-data:
-  redis-data:
-  redpanda-data:
-  clickhouse-data:
-  minio-data:
-  prometheus-data:
-  grafana-data:
-  pgadmin-data:
-  kong-db-data:
+  auth-db-data:

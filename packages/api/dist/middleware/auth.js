@@ -1,5 +1,3 @@
-// @fastify/jwt provides jwt.sign and jwt.verify, but not an authenticate hook
-// We need to add our own authenticate method that can be used as a preHandler
 export const authMiddleware = (app) => {
     // Add a custom authenticate method that can be used as preHandler in routes
     app.decorate('authenticate', async (request, reply) => {
@@ -25,18 +23,26 @@ export const authMiddleware = (app) => {
             }
             const token = authHeader.substring(7);
             const decoded = app.jwt.verify(token);
+            const userId = decoded.userId || decoded.id;
+            if (!userId) {
+                return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Invalid token: missing user id' });
+            }
+            console.log(`[AUTH MIDDLEWARE] Looking for user with id: ${userId}`);
             const user = await app.prisma.user.findUnique({
-                where: { id: decoded.userId },
-                select: { id: true, email: true, name: true, role: true, organizationMembers: { take: 1, select: { organizationId: true } } },
+                where: { id: userId },
+                select: { id: true, email: true, name: true, role: true },
             });
+            console.log(`[AUTH MIDDLEWARE] User found: ${user ? 'yes' : 'no'}`);
             if (!user) {
                 return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'User not found' });
             }
-            const organizationId = user.organizationMembers[0]?.organizationId ?? null;
+            if (!user) {
+                return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'User not found' });
+            }
             request.user = {
                 id: user.id,
                 userId: user.id,
-                organizationId,
+                organizationId: decoded.organizationId,
                 role: user.role,
             };
         }
