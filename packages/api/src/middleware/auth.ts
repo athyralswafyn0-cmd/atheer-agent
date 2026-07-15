@@ -59,13 +59,8 @@ export const authMiddleware = (app: FastifyInstance) => {
         role: user.role,
       };
     } catch (err) {
-      if ((err as any).name === 'JsonWebTokenError') {
-        return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Invalid token' });
-      }
-      if ((err as any).name === 'TokenExpiredError') {
-        return reply.code(401).send({ error: 'TOKEN_EXPIRED', message: 'Token has expired' });
-      }
-      return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Authentication failed' });
+      console.error('[AUTH MIDDLEWARE] Error:', err);
+      return reply.code(401).send({ error: 'UNAUTHORIZED', message: (err as Error).message });
     }
   });
 
