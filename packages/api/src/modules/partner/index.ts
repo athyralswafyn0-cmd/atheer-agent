@@ -298,11 +298,11 @@ export function createPartnerModule(context: ModuleContext): PartnerModuleInterf
       if (existing) {
         license = await prisma.license.update({
           where: { partnerId },
-          data: { ...data, expiresAt: new Date(data.expiresAt) },
+          data: { ...data, expiresAt: new Date(data.expiresAt) } as any,
         });
       } else {
         license = await prisma.license.create({
-          data: { ...data, partnerId, expiresAt: new Date(data.expiresAt) },
+          data: { ...data, partner: { connect: { id: partnerId } }, expiresAt: new Date(data.expiresAt) } as any,
         });
       }
 

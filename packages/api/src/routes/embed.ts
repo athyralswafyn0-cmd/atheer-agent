@@ -78,11 +78,11 @@ export const embedRoutes: FastifyPluginAsync = async (app) => {
     if (!conv) {
       conv = await app.prisma.conversation.create({
         data: {
-          botId,
+          bot: { connect: { id: botId } },
           sessionId: sessionId || crypto.randomUUID(),
           status: 'ACTIVE',
           metadata: { source: 'widget' } as Prisma.InputJsonValue,
-        },
+        } as any,
         include: { messages: { orderBy: { createdAt: 'asc' } } },
       });
     }

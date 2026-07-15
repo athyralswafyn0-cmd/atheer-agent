@@ -21,9 +21,9 @@ export const integrationRoutes: FastifyPluginAsync = async (app) => {
     const integration = await app.prisma.integration.create({
       data: {
         ...data,
-        organizationId,
+        organization: { connect: { id: organizationId } },
         config: (data.config ?? {}) as InputJsonValue,
-      },
+      } as any,
     });
 
     return reply.code(201).send({ integration });

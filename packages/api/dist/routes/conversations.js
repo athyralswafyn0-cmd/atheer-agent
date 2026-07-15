@@ -20,7 +20,7 @@ export const conversationRoutes = async (app) => {
         });
         const conversation = await app.prisma.conversation.create({
             data: {
-                botId: data.botId,
+                bot: { connect: { id: data.botId } },
                 visitorId: data.visitorId ?? null,
                 sessionId: data.sessionId ?? crypto.randomUUID(),
                 metadata: (data.metadata ?? {}),

@@ -211,7 +211,7 @@ export const partnerRoutes: FastifyPluginAsync = async (app) => {
       });
     } else {
       license = await app.prisma.license.create({
-        data: { ...data, partnerId },
+        data: { ...data, partner: { connect: { id: partnerId } } } as any,
       });
     }
 

@@ -16,6 +16,7 @@ import { partnersRoutes } from './routes/partners.js';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { initializeModules } from './modules/index.js';
+import type { ChatMessage } from './modules/interfaces.js';
 
 // Get __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);

@@ -248,7 +248,7 @@ export interface TenantModuleInterface {
   // Members & RBAC
   getMembers(organizationId: string): Promise<OrganizationMember[]>;
   addMember(organizationId: string, userId: string, role: string): Promise<OrganizationMember>;
-  updateMemberRole(userId: string, role: string): Promise<OrganizationMember>;
+  updateMemberRole(organizationId: string, userId: string, role: string): Promise<OrganizationMember>;
   removeMember(organizationId: string, userId: string, removedBy: string): Promise<void>;
   
   // Invitations

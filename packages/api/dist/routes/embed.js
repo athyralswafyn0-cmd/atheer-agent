@@ -61,7 +61,7 @@ export const embedRoutes = async (app) => {
         if (!conv) {
             conv = await app.prisma.conversation.create({
                 data: {
-                    botId,
+                    bot: { connect: { id: botId } },
                     sessionId: sessionId || crypto.randomUUID(),
                     status: 'ACTIVE',
                     metadata: { source: 'widget' },

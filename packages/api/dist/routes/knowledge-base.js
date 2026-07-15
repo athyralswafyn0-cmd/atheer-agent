@@ -38,7 +38,7 @@ export const knowledgeBaseRoutes = async (app) => {
         const kb = await app.prisma.knowledgeBase.create({
             data: {
                 ...data,
-                botId,
+                bot: { connect: { id: botId } },
                 status: 'pending',
                 metadata: data.metadata ?? undefined,
             },
@@ -51,7 +51,7 @@ export const knowledgeBaseRoutes = async (app) => {
         const items = z.array(createKnowledgeBaseSchema).parse(request.body);
         await app.validateBotAccess(botId, request.user?.organizationId ?? '');
         const kbs = await Promise.all(items.map((data) => app.prisma.knowledgeBase.create({
-            data: { ...data, botId, status: 'pending', metadata: data.metadata ?? undefined },
+            data: { ...data, bot: { connect: { id: botId } }, status: 'pending', metadata: data.metadata ?? undefined },
         })));
         await Promise.all(kbs.map((kb) => app.queue.add('process-knowledge-base', { knowledgeBaseId: kb.id })));
         return reply.code(201).send({ knowledgeBases: kbs });

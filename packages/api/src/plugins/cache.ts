@@ -1,9 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { createClient, RedisClientType } from 'redis';
+// Use any to avoid ioredis ESM/TypeScript issues
+type RedisClient = any;
 
 declare module 'fastify' {
   interface FastifyInstance {
-    redis: RedisClientType;
+    redis: RedisClient;
     cache: CacheManager;
   }
 }
@@ -24,11 +25,11 @@ export interface CacheEntry<T> {
 }
 
 export class CacheManager {
-  private client: RedisClientType;
+  private client: RedisClient;
   private defaultTtl: number;
   private keyPrefix: string;
 
-  constructor(client: RedisClientType, defaultTtl = 300, keyPrefix = 'cache:') {
+  constructor(client: RedisClient, defaultTtl = 300, keyPrefix = 'cache:') {
     this.client = client;
     this.defaultTtl = defaultTtl;
     this.keyPrefix = keyPrefix;
@@ -72,7 +73,7 @@ export class CacheManager {
   // Get cached response
   async get<T>(key: string): Promise<T | null> {
     try {
-      const cached = await this.client.get(this.keyPrefix + key);
+      const cached = await this.client.get(this.keyPrefix + key) as string | null;
       if (!cached) return null;
 
       const entry: CacheEntry<any> = JSON.parse(cached);
@@ -102,11 +103,11 @@ export class CacheManager {
     };
 
     try {
-      await this.client.setEx(this.keyPrefix + key, ttl, JSON.stringify(entry));
+      await this.client.setex(this.keyPrefix + key, ttl, JSON.stringify(entry));
 
       // Index by tags for invalidation
       for (const tag of options.tags || []) {
-        await this.client.sAdd(this.keyPrefix + 'tag:' + tag, key);
+        await this.client.sadd(this.keyPrefix + 'tag:' + tag, key);
         await this.client.expire(this.keyPrefix + 'tag:' + tag, 86400 * 30); // 30 days
       }
     } catch (error) {
@@ -120,11 +121,11 @@ export class CacheManager {
       const fullKey = this.keyPrefix + key;
       
       // Get tags first for cleanup
-      const cached = await this.client.get(this.keyPrefix + key);
+      const cached = await this.client.get(this.keyPrefix + key) as string | null;
       if (cached) {
         const entry: CacheEntry<any> = JSON.parse(cached);
         for (const tag of entry.tags || []) {
-          await this.client.sRem(this.keyPrefix + 'tag:' + tag, key);
+          await this.client.srem(this.keyPrefix + 'tag:' + tag, key);
         }
       }
 
@@ -137,7 +138,7 @@ export class CacheManager {
   // Invalidate by tag
   async invalidateByTag(tag: string): Promise<number> {
     try {
-      const keys = await this.client.sMembers(this.keyPrefix + 'tag:' + tag);
+      const keys = await this.client.smembers(this.keyPrefix + 'tag:' + tag);
       if (keys.length === 0) return 0;
 
       const fullKeys = keys.map(key => this.keyPrefix + key);
@@ -155,8 +156,9 @@ export class CacheManager {
   async invalidateByPattern(pattern: string): Promise<number> {
     try {
       const keys: string[] = [];
-      for await (const key of this.client.scanIterator({ match: this.keyPrefix + pattern, count: 100 })) {
-        keys.push(key.replace(this.keyPrefix, ''));
+      for await (const key of this.client.scanStream({ match: this.keyPrefix + pattern, count: 100 })) {
+        const keyStr = key as string;
+        keys.push(keyStr.replace(this.keyPrefix, ''));
       }
 
       if (keys.length === 0) return 0;
@@ -171,6 +173,18 @@ export class CacheManager {
     }
   }
 
+  // Clear all cache
+  async clear(): Promise<void> {
+    const keys: string[] = [];
+    for await (const key of this.client.scanStream({ match: this.keyPrefix + '*', count: 100 })) {
+      const keyStr = key as string;
+      keys.push(keyStr);
+    }
+    if (keys.length > 0) {
+      await this.client.del(keys);
+    }
+  }
+
   // Invalidate by organization
   async invalidateByOrganization(orgId: string): Promise<number> {
     return this.invalidateByPattern(`*org:${orgId}*`);
@@ -179,17 +193,6 @@ export class CacheManager {
   // Invalidate by user
   async invalidateByUser(userId: string): Promise<number> {
     return this.invalidateByPattern(`*user:${userId}*`);
-  }
-
-  // Clear all cache
-  async clear(): Promise<void> {
-    const keys: string[] = [];
-    for await (const key of this.client.scanIterator({ match: this.keyPrefix + '*', count: 100 })) {
-      keys.push(key);
-    }
-    if (keys.length > 0) {
-      await this.client.del(keys);
-    }
   }
 
   // Get cache stats
@@ -210,35 +213,15 @@ export class CacheManager {
 
 // Fastify plugin
 export async function cachePlugin(fastify: FastifyInstance): Promise<void> {
-  // Initialize Redis client
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  const { createClient } = await import('redis');
-  const client = createClient({
-    url: redisUrl,
-    socket: {
-      reconnectStrategy: (retries: number) => Math.min(retries * 100, 3000),
-    },
-  });
-
-  client.on('error', (err: Error) => {
-    console.error('Redis Client Error:', err);
-  });
-
-  await client.connect();
-  fastify.decorate('redis', client);
-
+  // Redis client is already set up by setupRedis plugin
+  // Just create the cache manager
   const cache = new CacheManager(
-    client,
+    fastify.redis,
     parseInt(process.env.CACHE_DEFAULT_TTL || '300', 10),
     'atheer:cache:'
   );
 
   fastify.decorate('cache', cache);
-
-  // Graceful shutdown
-  fastify.addHook('onClose', async () => {
-    await client.quit();
-  });
 
   console.log('Cache manager initialized');
 }

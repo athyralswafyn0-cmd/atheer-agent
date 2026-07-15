@@ -15,7 +15,7 @@ export const integrationRoutes = async (app) => {
         const integration = await app.prisma.integration.create({
             data: {
                 ...data,
-                organizationId,
+                organization: { connect: { id: organizationId } },
                 config: (data.config ?? {}),
             },
         });

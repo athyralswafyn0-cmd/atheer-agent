@@ -388,7 +388,8 @@ const Widget = ({ config }) => {
         body: JSON.stringify({
           message: currentInput,
           sessionId: localStorage.getItem(`chat_session_${config.botId}`) || "",
-          language
+          language,
+          model: config.model
         })
       });
       const data = await response.json();

@@ -166,7 +166,7 @@ export const partnerRoutes = async (app) => {
         }
         else {
             license = await app.prisma.license.create({
-                data: { ...data, partnerId },
+                data: { ...data, partner: { connect: { id: partnerId } } },
             });
         }
         return { license };

@@ -28,12 +28,12 @@ export const conversationRoutes: FastifyPluginAsync = async (app) => {
 
     const conversation = await app.prisma.conversation.create({
       data: {
-        botId: data.botId,
+        bot: { connect: { id: data.botId } },
         visitorId: data.visitorId ?? null,
         sessionId: data.sessionId ?? crypto.randomUUID(),
         metadata: (data.metadata ?? {}) as Prisma.InputJsonValue,
         status: 'ACTIVE' as ConversationStatus,
-      },
+      } as any,
     });
 
     if (bot?.welcomeMessage) {

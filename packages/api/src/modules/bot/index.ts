@@ -12,20 +12,8 @@ import {
   ConversationFilters,
 } from '../interfaces.js';
 // Local types for model routing (not in shared interfaces)
-interface ModelInfo {
-  id: string;
-  name: string;
-  provider: 'openai' | 'anthropic' | 'google' | 'meta' | 'mistral' | 'custom';
-  capabilities: string[];
-  maxTokens: number;
-  costPer1kTokens: { input: number; output: number };
-}
-
-interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  metadata?: Record<string, any>;
-}
+type ModelInfo = import('../interfaces.js').ModelInfo;
+type ChatMessage = import('../interfaces.js').ChatMessage;
 
 // ============================================
 // VALIDATION SCHEMAS
@@ -180,8 +168,8 @@ export function createBotModule(context: ModuleContext): BotModuleInterface {
       const bot = await prisma.bot.create({
         data: {
           ...data,
-          organizationId,
-          ownerId,
+          organization: { connect: { id: organizationId } },
+          owner: { connect: { id: ownerId } },
           status: 'INACTIVE',
           embedScripts: {
             create: {
@@ -190,7 +178,7 @@ export function createBotModule(context: ModuleContext): BotModuleInterface {
               scriptVersion: '1.0.0',
             },
           },
-        },
+        } as any,
       });
 
       return formatBot(bot);
@@ -386,9 +374,9 @@ export function createBotModule(context: ModuleContext): BotModuleInterface {
       const kb = await prisma.knowledgeBase.create({
         data: {
           ...data,
-          botId,
+          bot: { connect: { id: botId } },
           status: 'processing',
-        },
+        } as any,
       });
 
       return formatKnowledgeBase(kb);

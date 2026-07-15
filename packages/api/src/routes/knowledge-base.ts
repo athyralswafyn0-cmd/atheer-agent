@@ -50,10 +50,10 @@ export const knowledgeBaseRoutes: FastifyPluginAsync = async (app) => {
     const kb = await app.prisma.knowledgeBase.create({
       data: {
         ...data,
-        botId,
+        bot: { connect: { id: botId } },
         status: 'pending',
         metadata: data.metadata as InputJsonValue ?? undefined,
-      },
+      } as any,
     });
 
     await app.queue.add('process-knowledge-base', { knowledgeBaseId: kb.id });
@@ -68,9 +68,9 @@ export const knowledgeBaseRoutes: FastifyPluginAsync = async (app) => {
     await app.validateBotAccess(botId, request.user?.organizationId ?? '');
 
     const kbs = await Promise.all(
-      items.map((data) =>
+      items.map((data: any) =>
         app.prisma.knowledgeBase.create({
-          data: { ...data, botId, status: 'pending', metadata: data.metadata as InputJsonValue ?? undefined },
+          data: { ...data, bot: { connect: { id: botId } }, status: 'pending', metadata: data.metadata as InputJsonValue ?? undefined } as any,
         })
       )
     );
