@@ -2,7 +2,7 @@
 # Atheer Agent AI - MONOLITH API DEPLOYMENT (Render Free Tier)
 # =============================================================================
 # Deploys: packages/api (Fastify + Prisma) as a single Web Service
-# DB: Single PostgreSQL (Supabase or Render PostgreSQL)
+# DB: Single PostgreSQL (Supabase)
 # Dashboard & Widget → Deploy separately on Vercel
 # =============================================================================
 
@@ -13,7 +13,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    repo: https://github.com/YOUR_GITHUB_USERNAME/Atheer_Agent_Ai
+    repo: https://github.com/athyralswafyn0-cmd/atheer-agent
     branch: main
     buildCommand: |
       cd packages/api && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm run build
@@ -64,10 +64,3 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
-
-databases:
-  - name: atheer-db
-    databaseName: atheer_agent
-    user: atheer_user
-    plan: free
-    region: frankfurt
