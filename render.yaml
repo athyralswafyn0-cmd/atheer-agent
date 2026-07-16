@@ -28,10 +28,8 @@ services:
         value: "10000"
       - key: HOST
         value: "0.0.0.0"
-      - fromDatabase:
-          name: atheer-db
-          property: connectionString
-        key: DATABASE_URL
+      - key: DATABASE_URL
+        value: postgresql://postgres.nogtctdpgothmpiaizgw:QwFsa7AZbzmsyyUF@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
       - key: JWT_SECRET
         sync: false
       - key: JWT_EXPIRES_IN
