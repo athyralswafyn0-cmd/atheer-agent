@@ -63,4 +63,4 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: SMTP_FROM
-        sync: false# updated Thu Jul 16 20:40:01 +03 2026
+        sync: false
