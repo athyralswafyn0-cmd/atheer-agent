@@ -2,7 +2,7 @@
 
 import { AuthProvider } from '@/lib/auth';
 
-export default function DashboardLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;

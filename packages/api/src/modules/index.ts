@@ -6,17 +6,23 @@ import {
   TenantModuleInterface,
   PartnerModuleInterface,
   BotModuleInterface,
+  ConversationModuleInterface,
+  WidgetModuleInterface,
 } from './interfaces.js';
 import { createAuthModule } from './auth/index.js';
 import { createTenantModule } from './tenant/index.js';
 import { createPartnerModule } from './partner/index.js';
 import { createBotModule } from './bot/index.js';
+import { createConversationModule } from './conversation/index.js';
+import { createWidgetModule } from './widget/index.js';
 
 export interface ModuleRegistry {
   auth: AuthModuleInterface;
   tenant: TenantModuleInterface;
   partner: PartnerModuleInterface;
   bot: BotModuleInterface;
+  conversation: ConversationModuleInterface;
+  widget: WidgetModuleInterface;
 }
 
 /**
@@ -32,6 +38,8 @@ export async function initializeModules(app: FastifyInstance): Promise<ModuleReg
     tenant: createTenantModule(context) as any,
     partner: createPartnerModule(context) as any,
     bot: createBotModule(context) as any,
+    conversation: createConversationModule(context) as any,
+    widget: createWidgetModule(context) as any,
   };
 
   // Attach to Fastify instance for route access
@@ -63,9 +71,16 @@ export function createModuleContext(app: FastifyInstance): ModuleContext {
 /**
  * Module dependency graph - defines initialization order
  * Auth must be first (others depend on it)
- * Tenant before Partner/Bot (they need organizations)
+ * Tenant before Partner/Bot/Conversation/Widget (they need organizations)
  */
-export const moduleInitOrder: (keyof ModuleRegistry)[] = ['auth', 'tenant', 'partner', 'bot'];
+export const moduleInitOrder: (keyof ModuleRegistry)[] = [
+  'auth', 
+  'tenant', 
+  'partner', 
+  'bot', 
+  'conversation', 
+  'widget'
+];
 
 /**
  * Validates module dependencies are satisfied
@@ -87,6 +102,14 @@ export function validateModuleDependencies(modules: ModuleRegistry): { valid: bo
 
   if (modules.bot && !modules.tenant) {
     errors.push('Bot module requires Tenant module');
+  }
+
+  if (modules.conversation && !modules.tenant) {
+    errors.push('Conversation module requires Tenant module');
+  }
+
+  if (modules.widget && !modules.tenant) {
+    errors.push('Widget module requires Tenant module');
   }
 
   return {

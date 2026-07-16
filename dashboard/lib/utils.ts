@@ -5,40 +5,33 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('ar-EG', {
+export function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toString();
+}
+
+export function formatCurrency(amount: number, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'short',
+    month: 'long',
     day: 'numeric',
     ...options,
   });
-}
-
-export function formatDateTime(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleString('ar-EG', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-export function formatRelativeTime(date: string | Date): string {
-  const d = new Date(date);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'الآن';
-  if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
-  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-  if (diffDays < 7) return `منذ ${diffDays} أيام`;
-  return formatDate(d);
 }
 
 export function truncate(str: string, length: number): string {
@@ -46,48 +39,40 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length) + '...';
 }
 
-export function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+export function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
-export function formatNumber(num: number): string {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'م';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'ك';
-  return num.toString();
+export function generateId(): string {
+  return Math.random().toString(36).substring(2, 15);
 }
 
-export function getStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    ACTIVE: 'text-green-600 bg-green-100',
-    INACTIVE: 'text-gray-600 bg-gray-100',
-    PENDING: 'text-yellow-600 bg-yellow-100',
-    CLOSED: 'text-gray-600 bg-gray-100',
-    ESCALATED: 'text-red-600 bg-red-100',
-    NEW: 'text-blue-600 bg-blue-100',
-    CONTACTED: 'text-purple-600 bg-purple-100',
-    QUALIFIED: 'text-green-600 bg-green-100',
-    CONVERTED: 'text-emerald-600 bg-emerald-100',
-    LOST: 'text-red-600 bg-red-100',
-    TRAINING: 'text-orange-600 bg-orange-100',
-    ERROR: 'text-red-600 bg-red-100',
-    completed: 'text-green-600 bg-green-100',
-    processing: 'text-yellow-600 bg-yellow-100',
-    failed: 'text-red-600 bg-red-100',
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
   };
-  return colors[status.toUpperCase()] || 'text-gray-600 bg-gray-100';
 }
 
-export function getRoleColor(role: string): string {
-  const colors: Record<string, string> = {
-    ADMIN: 'text-purple-600 bg-purple-100',
-    MANAGER: 'text-blue-600 bg-blue-100',
-    AGENT: 'text-green-600 bg-green-100',
-    VIEWER: 'text-gray-600 bg-gray-100',
+export function throttle<T extends (...args: unknown[]) => unknown>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle = false;
+  return (...args: Parameters<T>) => {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
   };
-  return colors[role.toUpperCase()] || 'text-gray-600 bg-gray-100';
 }
