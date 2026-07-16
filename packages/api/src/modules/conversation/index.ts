@@ -8,12 +8,12 @@ export function createConversationModule(context: any) {
     // CONVERSATION CRUD
     // ============================================
 
-    async createConversation(input: any, userId: string) {
+    async createConversation(input: any, botId: string, organizationId: string) {
       const url = `${conversationServiceURL}/api/v1/conversation/conversations`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...input, userId })
+        body: JSON.stringify({ ...input, botId, organizationId })
       });
       if (!response.ok) {
         const error = await response.json() as any;
@@ -33,12 +33,12 @@ export function createConversationModule(context: any) {
       return response.json();
     },
 
-    async updateConversation(conversationId: string, input: any, userId: string) {
+    async updateConversation(conversationId: string, input: any) {
       const url = `${conversationServiceURL}/api/v1/conversation/conversations/${conversationId}`;
       const response = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...input, userId })
+        body: JSON.stringify(input)
       });
       if (!response.ok) {
         if (response.status === 404) return null;
@@ -48,12 +48,11 @@ export function createConversationModule(context: any) {
       return response.json();
     },
 
-    async deleteConversation(conversationId: string, userId: string) {
+    async deleteConversation(conversationId: string) {
       const url = `${conversationServiceURL}/api/v1/conversation/conversations/${conversationId}`;
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        headers: { 'Content-Type': 'application/json' }
       });
       if (!response.ok) {
         throw new Error('Delete failed: ' + response.status);
@@ -72,15 +71,15 @@ export function createConversationModule(context: any) {
     },
 
     // ============================================
-    // MESSAGES
+    // MESSAGE MANAGEMENT
     // ============================================
 
-    async addMessage(conversationId: string, input: any) {
+    async addMessage(conversationId: string, message: any) {
       const url = `${conversationServiceURL}/api/v1/conversation/conversations/${conversationId}/messages`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input)
+        body: JSON.stringify(message)
       });
       if (!response.ok) {
         throw new Error('Add message failed: ' + response.status);
@@ -99,11 +98,42 @@ export function createConversationModule(context: any) {
     },
 
     // ============================================
+    // CONVERSATION STATE
+    // ============================================
+
+    async updateStatus(conversationId: string, status: string) {
+      const url = `${conversationServiceURL}/api/v1/conversation/conversations/${conversationId}/status`;
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) {
+        throw new Error('Update status failed: ' + response.status);
+      }
+      return response.json();
+    },
+
+    async assignAgent(conversationId: string, agentId: string) {
+      const url = `${conversationServiceURL}/api/v1/conversation/conversations/${conversationId}/assign`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId })
+      });
+      if (!response.ok) {
+        throw new Error('Assign agent failed: ' + response.status);
+      }
+      return response.json();
+    },
+
+    // ============================================
     // ANALYTICS
     // ============================================
 
-    async getAnalytics(conversationId: string) {
-      const url = `${conversationServiceURL}/api/v1/conversation/conversations/${conversationId}/analytics`;
+    async getConversationAnalytics(botId: string, query?: any) {
+      const params = new URLSearchParams(query || {});
+      const url = `${conversationServiceURL}/api/v1/conversation/bots/${botId}/analytics?${params.toString()}`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Get analytics failed: ' + response.status);
@@ -118,9 +148,7 @@ export function createConversationModule(context: any) {
     async healthCheck() {
       const url = `${conversationServiceURL}/health`;
       const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Health check failed: ' + response.status);
-      }
+      if (!response.ok) throw new Error('Health check failed: ' + response.status);
       return response.json();
     }
   };

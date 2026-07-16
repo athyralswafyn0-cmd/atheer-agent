@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
+import { GlassCard, CrystalButton, Button } from '@/components/design-system';
+import { LivingCanvas, GrainOverlay } from '@/components/design-system';
+import { cn } from '@/lib/utils';
+import { Building2, Users, MessageSquare, Bot, DollarSign, TrendingUp, ArrowRight, Settings, Bell } from 'lucide-react';
 
 interface Partner {
   id: string;
@@ -80,161 +84,183 @@ export default function PartnerDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-soft-indigo border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading partner dashboard...</p>
+      <>
+        <LivingCanvas />
+        <GrainOverlay />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-gold/30 border-t-gold rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-ink/60">جاري تحميل لوحة التحكم...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Partner Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back, {partner?.name || 'Partner'}!</p>
-      </div>
-
-      {/* Partner Profile */}
-      <div className="glass-card p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Partner Profile</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Name</p>
-            <p className="font-medium">{partner?.name || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Email</p>
-            <p className="font-medium">{partner?.email || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Organization ID</p>
-            <p className="font-medium text-sm">{partner?.organizationId || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Role</p>
-            <p className="font-medium">{partner?.role || 'N/A'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      {usage && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          <div className="glass-card p-4 text-center">
-            <p className="text-2xl font-bold text-soft-indigo">{usage.totalOrganizations}</p>
-            <p className="text-sm text-gray-500">Organizations</p>
-          </div>
-          <div className="glass-card p-4 text-center">
-            <p className="text-2xl font-bold text-soft-indigo">{usage.totalBots}</p>
-            <p className="text-sm text-gray-500">Bots</p>
-          </div>
-          <div className="glass-card p-4 text-center">
-            <p className="text-2xl font-bold text-soft-indigo">{usage.totalConversations}</p>
-            <p className="text-sm text-gray-500">Conversations</p>
-          </div>
-          <div className="glass-card p-4 text-center">
-            <p className="text-2xl font-bold text-soft-indigo">{usage.totalMessages}</p>
-            <p className="text-sm text-gray-500">Messages</p>
-          </div>
-          <div className="glass-card p-4 text-center">
-            <p className="text-2xl font-bold text-soft-indigo">{usage.totalLeads}</p>
-            <p className="text-sm text-gray-500">Leads</p>
-          </div>
-        </div>
-      )}
-
-      {/* License & Organizations Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* License */}
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold mb-4">License</h2>
-          {license ? (
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Plan</span>
-                <span className="font-medium capitalize">{license.plan}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Status</span>
-                <span className={`font-medium capitalize ${license.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
-                  {license.status}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Started</span>
-                <span className="font-medium">{new Date(license.startsAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Expires</span>
-                <span className="font-medium">{new Date(license.expiresAt).toLocaleDateString()}</span>
-              </div>
+    <>
+      <LivingCanvas />
+      <GrainOverlay />
+      <div className="relative z-10 min-h-screen p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div>
+              <h1 className="font-display text-4xl sm:text-5xl font-light text-ink mb-1">لوحة تحكم الشريك</h1>
+              <p className="text-ink/60">مرحباً بعودتك، {partner?.name || 'شريك'}!</p>
             </div>
-          ) : (
-            <p className="text-gray-500">No license information available.</p>
-          )}
-        </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" leftIcon={<Bell className="w-4 h-4" />}>
+                إشعارات
+              </Button>
+              <Button variant="outline" size="sm" leftIcon={<Settings className="w-4 h-4" />}>
+                الإعدادات
+              </Button>
+            </div>
+          </div>
 
-        {/* Organizations */}
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold mb-4">Organizations</h2>
-          {organizations.length > 0 ? (
-            <ul className="divide-y divide-gray-200">
-              {organizations.map((org) => (
-                <li key={org.id} className="py-3 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{org.name}</p>
-                    <p className="text-sm text-gray-500">{org.slug}</p>
+          {/* Stats Grid */}
+          {usage && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+              <GlassCard className="p-5 text-center hover:scale-[1.02] transition-transform" hover>
+                <Building2 className="w-8 h-8 mx-auto text-gold mb-2" />
+                <div className="font-display text-2xl sm:text-3xl font-bold text-gold mb-1">{usage.totalOrganizations}</div>
+                <div className="text-sm text-ink/60">منظمات</div>
+              </GlassCard>
+              <GlassCard className="p-5 text-center hover:scale-[1.02] transition-transform" hover>
+                <Bot className="w-8 h-8 mx-auto text-gold mb-2" />
+                <div className="font-display text-2xl sm:text-3xl font-bold text-gold mb-1">{usage.totalBots}</div>
+                <div className="text-sm text-ink/60">بوتات</div>
+              </GlassCard>
+              <GlassCard className="p-5 text-center hover:scale-[1.02] transition-transform" hover>
+                <MessageSquare className="w-8 h-8 mx-auto text-gold mb-2" />
+                <div className="font-display text-2xl sm:text-3xl font-bold text-gold mb-1">{usage.totalConversations}</div>
+                <div className="text-sm text-ink/60">محادثات</div>
+              </GlassCard>
+              <GlassCard className="p-5 text-center hover:scale-[1.02] transition-transform" hover>
+                <TrendingUp className="w-8 h-8 mx-auto text-gold mb-2" />
+                <div className="font-display text-2xl sm:text-3xl font-bold text-gold mb-1">{usage.totalMessages.toLocaleString()}</div>
+                <div className="text-sm text-ink/60">رسائل</div>
+              </GlassCard>
+              <GlassCard className="p-5 text-center hover:scale-[1.02] transition-transform" hover>
+                <Users className="w-8 h-8 mx-auto text-gold mb-2" />
+                <div className="font-display text-2xl sm:text-3xl font-bold text-gold mb-1">{usage.totalLeads}</div>
+                <div className="text-sm text-ink/60">عملاء محتملون</div>
+              </GlassCard>
+            </div>
+          )}
+
+          {/* License & Organizations Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* License */}
+            <GlassCard className="p-6">
+              <h2 className="font-display text-xl font-medium text-ink mb-4">الترخيص</h2>
+              {license ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-white/3 border border-white/10 rounded-xl">
+                    <span className="text-ink/70">الخطة</span>
+                    <span className="font-medium capitalize text-gold">{license.plan}</span>
                   </div>
-                  <div className="text-right">
-                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${org.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {org.status}
+                  <div className="flex justify-between items-center p-3 bg-white/3 border border-white/10 rounded-xl">
+                    <span className="text-ink/70">الحالة</span>
+                    <span className={cn(
+                      'font-medium capitalize px-3 py-1 rounded-full text-sm',
+                      license.status === 'active'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    )}>
+                      {license.status}
                     </span>
-                    <p className="text-xs text-gray-400 mt-1 capitalize">{org.plan}</p>
                   </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No organizations found.</p>
+                  <div className="flex justify-between items-center p-3 bg-white/3 border border-white/10 rounded-xl">
+                    <span className="text-ink/70">تاريخ البداية</span>
+                    <span className="font-medium">{new Date(license.startsAt).toLocaleDateString('ar-SA')}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-white/3 border border-white/10 rounded-xl">
+                    <span className="text-ink/70">تاريخ الانتهاء</span>
+                    <span className="font-medium">{new Date(license.expiresAt).toLocaleDateString('ar-SA')}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-ink/50">لا توجد معلومات ترخيص متاحة.</p>
+              )}
+            </GlassCard>
+
+            {/* Organizations */}
+            <GlassCard className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-xl font-medium text-ink">المنظمات</h2>
+                <CrystalButton href="/organizations/new" size="sm" leftIcon={<Building2 className="w-4 h-4" />}>
+                  إضافة
+                </CrystalButton>
+              </div>
+              {organizations.length > 0 ? (
+                <div className="space-y-3">
+                  {organizations.map((org) => (
+                    <div key={org.id} className="flex items-center justify-between p-3 bg-white/3 border border-white/10 rounded-xl hover:bg-white/5 transition-colors">
+                      <div>
+                        <p className="font-medium text-ink">{org.name}</p>
+                        <p className="text-sm text-ink/50">{org.slug}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={cn(
+                          'inline-block px-2 py-1 text-xs rounded-full',
+                          org.status === 'active'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                        )}>
+                          {org.status}
+                        </span>
+                        <p className="text-xs text-ink/50 mt-1 capitalize">{org.plan}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-ink/50 text-center py-4">لا توجد منظمات.</p>
+              )}
+            </GlassCard>
+          </div>
+
+          {/* Invoices */}
+          {invoices.length > 0 && (
+            <GlassCard className="p-6">
+              <h2 className="font-display text-xl font-medium text-ink mb-4">الفواتير الأخيرة</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left py-3 font-semibold text-ink/50">الفاتورة</th>
+                      <th className="text-left py-3 font-semibold text-ink/50">المبلغ</th>
+                      <th className="text-left py-3 font-semibold text-ink/50">الحالة</th>
+                      <th className="text-left py-3 font-semibold text-ink/50">تاريخ الاستحقاق</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((invoice) => (
+                      <tr key={invoice.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
+                        <td className="py-3 font-mono text-ink/70">{invoice.id.slice(0, 8)}</td>
+                        <td className="py-3 text-ink">${invoice.amount.toFixed(2)}</td>
+                        <td className="py-3">
+                          <span className={cn(
+                            'inline-block px-2 py-1 text-xs rounded-full',
+                            invoice.status === 'paid'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                          )}>
+                            {invoice.status === 'paid' ? 'مدفوعة' : 'معلقة'}
+                          </span>
+                        </td>
+                        <td className="py-3 text-ink/60">{new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </GlassCard>
           )}
         </div>
       </div>
-
-      {/* Invoices */}
-      {invoices.length > 0 && (
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Invoices</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 font-semibold text-gray-500">Invoice</th>
-                  <th className="text-left py-2 font-semibold text-gray-500">Amount</th>
-                  <th className="text-left py-2 font-semibold text-gray-500">Status</th>
-                  <th className="text-left py-2 font-semibold text-gray-500">Due Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="border-b border-gray-100">
-                    <td className="py-2 font-mono text-sm">{invoice.id.slice(0, 8)}</td>
-                    <td className="py-2">${invoice.amount.toFixed(2)}</td>
-                    <td className="py-2">
-                      <span className={`inline-block px-2 py-1 text-xs rounded-full ${invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="py-2">{new Date(invoice.dueDate).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

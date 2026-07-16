@@ -820,6 +820,63 @@ export type DomainEvent =
   | { type: 'analytics.event'; payload: { event: string; organizationId: string; properties: Record<string, any> } };
 
 // ============================================
+// WIDGET MODULE INTERFACE
+// ============================================
+
+export interface Widget {
+  id: string;
+  name: string;
+  description?: string;
+  code: string;
+  config: Record<string, any>;
+  isActive: boolean;
+  orgId: string;
+  botId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateWidgetInput {
+  name: string;
+  description?: string;
+  config?: Record<string, any>;
+  orgId: string;
+  botId?: string;
+}
+
+export interface UpdateWidgetInput extends Partial<CreateWidgetInput> {}
+
+export interface WidgetAnalytics {
+  totalViews: number;
+  totalChats: number;
+  totalLeads: number;
+  avgResponseTime: number;
+  satisfactionRate: number;
+  viewsByDate: { date: Date; count: number }[];
+  chatsByDate: { date: Date; count: number }[];
+}
+
+export interface WidgetModuleInterface {
+  createWidget(input: CreateWidgetInput): Promise<Widget>;
+  getWidget(id: string): Promise<Widget | null>;
+  getWidgetByCode(code: string): Promise<Widget | null>;
+  listWidgets(orgId: string, filters?: WidgetFilters): Promise<{ widgets: Widget[]; pagination: PaginationResult }>;
+  updateWidget(id: string, input: UpdateWidgetInput): Promise<Widget>;
+  deleteWidget(id: string): Promise<void>;
+  getWidgetScript(widgetId: string, domain?: string): Promise<{ script: string; scriptUrl: string }>;
+  validateWidgetDomain(widgetId: string, domain: string): Promise<boolean>;
+  getWidgetAnalytics(widgetId: string, startDate: Date, endDate: Date): Promise<WidgetAnalytics>;
+}
+
+export interface WidgetFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  botId?: string;
+}
+
+// ============================================
 // MODULE REGISTRY
 // ============================================
 

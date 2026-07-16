@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance } from 'fastify'
 import { 
   ModuleContext, 
   ModuleConfig,
