@@ -1,290 +1,26 @@
+# =============================================================================
+# Atheer Agent AI - MONOLITH API DEPLOYMENT (Render Free Tier)
+# =============================================================================
+# Deploys: packages/api (Fastify + Prisma) as a single Web Service
+# DB: Single PostgreSQL (Supabase or Render PostgreSQL)
+# Dashboard & Widget → Deploy separately on Vercel
+# =============================================================================
+
 services:
-  # === AUTH SERVICE ===
+  # === MONOLITH API ===
   - type: web
-    name: auth-service
+    name: atheer-api
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: |
-      cd services/auth-service && npm install && npx prisma generate && npm run build
-    startCommand: |
-      cd services/auth-service && npx prisma migrate deploy && PORT=3001 npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "3001"
-      - key: HOST
-        value: "0.0.0.0"
-      - fromDatabase:
-          name: auth-db
-          property: connectionString
-        key: DATABASE_URL
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: "7d"
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: "llama-3.1-70b-versatile"
-      - key: GOOGLE_AI_API_KEY
-        sync: false
-      - key: GOOGLE_AI_MODEL
-        value: "gemini-1.5-flash"
-      - key: EMBEDDING_PROVIDER
-        value: "google"
-      - key: EMBEDDING_MODEL
-        value: "text-embedding-004"
-      - key: REDIS_URL
-        value: ""
-      - key: FRONTEND_URL
-        value: "https://www.atheersolutions.online"
-      - key: CORS_ORIGINS
-        value: "https://www.atheersolutions.online,https://atheersolutions.online"
-    healthCheckPath: /health
-    autoDeploy: true
-
-  # === TENANT SERVICE ===
-  - type: web
-    name: tenant-service
-    runtime: node
-    plan: free
-    region: frankfurt
-    buildCommand: |
-      cd services/tenant-service && npm install && npx prisma generate && npm run build
-    startCommand: |
-      cd services/tenant-service && npx prisma migrate deploy && PORT=3002 npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "3002"
-      - key: HOST
-        value: "0.0.0.0"
-      - fromDatabase:
-          name: tenant-db
-          property: connectionString
-        key: DATABASE_URL
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: "7d"
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: "llama-3.1-70b-versatile"
-      - key: GOOGLE_AI_API_KEY
-        sync: false
-      - key: GOOGLE_AI_MODEL
-        value: "gemini-1.5-flash"
-      - key: EMBEDDING_PROVIDER
-        value: "google"
-      - key: EMBEDDING_MODEL
-        value: "text-embedding-004"
-      - key: REDIS_URL
-        value: ""
-      - key: FRONTEND_URL
-        value: "https://www.atheersolutions.online"
-      - key: CORS_ORIGINS
-        value: "https://www.atheersolutions.online,https://atheersolutions.online"
-    healthCheckPath: /health
-    autoDeploy: true
-
-  # === PARTNER SERVICE ===
-  - type: web
-    name: partner-service
-    runtime: node
-    plan: free
-    region: frankfurt
-    buildCommand: |
-      cd services/partner-service && npm install && npx prisma generate && npm run build
-    startCommand: |
-      cd services/partner-service && npx prisma migrate deploy && PORT=3003 npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "3003"
-      - key: HOST
-        value: "0.0.0.0"
-      - fromDatabase:
-          name: partner-db
-          property: connectionString
-        key: DATABASE_URL
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: "7d"
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: "llama-3.1-70b-versatile"
-      - key: GOOGLE_AI_API_KEY
-        sync: false
-      - key: GOOGLE_AI_MODEL
-        value: "gemini-1.5-flash"
-      - key: EMBEDDING_PROVIDER
-        value: "google"
-      - key: EMBEDDING_MODEL
-        value: "text-embedding-004"
-      - key: REDIS_URL
-        value: ""
-      - key: FRONTEND_URL
-        value: "https://www.atheersolutions.online"
-      - key: CORS_ORIGINS
-        value: "https://www.atheersolutions.online,https://atheersolutions.online"
-    healthCheckPath: /health
-    autoDeploy: true
-
-  # === BOT SERVICE ===
-  - type: web
-    name: bot-service
-    runtime: node
-    plan: free
-    region: frankfurt
-    buildCommand: |
-      cd services/bot-service && npm install && npx prisma generate && npm run build
-    startCommand: |
-      cd services/bot-service && npx prisma migrate deploy && PORT=3004 npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "3004"
-      - key: HOST
-        value: "0.0.0.0"
-      - fromDatabase:
-          name: bot-db
-          property: connectionString
-        key: DATABASE_URL
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: "7d"
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: "llama-3.1-70b-versatile"
-      - key: GOOGLE_AI_API_KEY
-        sync: false
-      - key: GOOGLE_AI_MODEL
-        value: "gemini-1.5-flash"
-      - key: EMBEDDING_PROVIDER
-        value: "google"
-      - key: EMBEDDING_MODEL
-        value: "text-embedding-004"
-      - key: REDIS_URL
-        value: ""
-      - key: FRONTEND_URL
-        value: "https://www.atheersolutions.online"
-      - key: CORS_ORIGINS
-        value: "https://www.atheersolutions.online,https://atheersolutions.online"
-    healthCheckPath: /health
-    autoDeploy: true
-
-  # === CONVERSATION SERVICE ===
-  - type: web
-    name: conversation-service
-    runtime: node
-    plan: free
-    region: frankfurt
-    buildCommand: |
-      cd services/conversation-service && npm install && npx prisma generate && npm run build
-    startCommand: |
-      cd services/conversation-service && npx prisma migrate deploy && PORT=3005 npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "3005"
-      - key: HOST
-        value: "0.0.0.0"
-      - fromDatabase:
-          name: conversation-db
-          property: connectionString
-        key: DATABASE_URL
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: "7d"
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: "llama-3.1-70b-versatile"
-      - key: GOOGLE_AI_API_KEY
-        sync: false
-      - key: GOOGLE_AI_MODEL
-        value: "gemini-1.5-flash"
-      - key: EMBEDDING_PROVIDER
-        value: "google"
-      - key: EMBEDDING_MODEL
-        value: "text-embedding-004"
-      - key: REDIS_URL
-        value: ""
-      - key: FRONTEND_URL
-        value: "https://www.atheersolutions.online"
-      - key: CORS_ORIGINS
-        value: "https://www.atheersolutions.online,https://atheersolutions.online"
-    healthCheckPath: /health
-    autoDeploy: true
-
-  # === WIDGET SERVICE ===
-  - type: web
-    name: widget-service
-    runtime: node
-    plan: free
-    region: frankfurt
-    buildCommand: |
-      cd services/widget-service && npm install && npx prisma generate && npm run build
-    startCommand: |
-      cd services/widget-service && npx prisma migrate deploy && PORT=3006 npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "3006"
-      - key: HOST
-        value: "0.0.0.0"
-      - fromDatabase:
-          name: widget-db
-          property: connectionString
-        key: DATABASE_URL
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: "7d"
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: "llama-3.1-70b-versatile"
-      - key: GOOGLE_AI_API_KEY
-        sync: false
-      - key: GOOGLE_AI_MODEL
-        value: "gemini-1.5-flash"
-      - key: EMBEDDING_PROVIDER
-        value: "google"
-      - key: EMBEDDING_MODEL
-        value: "text-embedding-004"
-      - key: REDIS_URL
-        value: ""
-      - key: FRONTEND_URL
-        value: "https://www.atheersolutions.online"
-      - key: CORS_ORIGINS
-        value: "https://www.atheersolutions.online,https://atheersolutions.online"
-    healthCheckPath: /health
-    autoDeploy: true
-
-  # === API GATEWAY ===
-  - type: web
-    name: atheer-agent-api
-    runtime: node
-    plan: free
-    region: frankfurt
+    repo: https://github.com/YOUR_GITHUB_USERNAME/Atheer_Agent_Ai
+    branch: main
     buildCommand: |
       cd packages/api && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm run build
     startCommand: |
       cd packages/api && npx prisma migrate deploy && PORT=10000 pnpm start
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -300,20 +36,13 @@ services:
         sync: false
       - key: JWT_EXPIRES_IN
         value: "7d"
-      # Service URLs for inter-service communication
-      - key: AUTH_SERVICE_URL
-        value: "https://auth-service.onrender.com"
-      - key: TENANT_SERVICE_URL
-        value: "https://tenant-service.onrender.com"
-      - key: PARTNER_SERVICE_URL
-        value: "https://partner-service.onrender.com"
-      - key: BOT_SERVICE_URL
-        value: "https://bot-service.onrender.com"
-      - key: CONVERSATION_SERVICE_URL
-        value: "https://conversation-service.onrender.com"
-      - key: WIDGET_SERVICE_URL
-        value: "https://widget-service.onrender.com"
-      # AI Providers
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      - key: CORS_ORIGINS
+        value: "https://www.atheersolutions.online,https://atheersolutions.online,https://dashboard.atheersolutions.online"
+      - key: REDIS_URL
+        value: ""  # Set if using Upstash Redis (free tier)
+      # AI Providers (optional - add when needed)
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
@@ -326,48 +55,19 @@ services:
         value: "google"
       - key: EMBEDDING_MODEL
         value: "text-embedding-004"
-      - key: REDIS_URL
-        value: ""
-      - key: FRONTEND_URL
-        value: "https://www.atheersolutions.online"
-      - key: WIDGET_CDN_URL
-        value: "https://www.atheersolutions.online/widget"
-      - key: CORS_ORIGINS
-        value: "https://www.atheersolutions.online,https://atheersolutions.online"
-    healthCheckPath: /health
-    autoDeploy: true
+      # Email (optional)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
 
 databases:
-  - name: auth-db
-    databaseName: auth_db
-    user: auth_user
-    plan: free
-    region: frankfurt
-  - name: tenant-db
-    databaseName: tenant_db
-    user: tenant_user
-    plan: free
-    region: frankfurt
-  - name: partner-db
-    databaseName: partner_db
-    user: partner_user
-    plan: free
-    region: frankfurt
-  - name: bot-db
-    databaseName: bot_db
-    user: bot_user
-    plan: free
-    region: frankfurt
-  - name: conversation-db
-    databaseName: conversation_db
-    user: conversation_user
-    plan: free
-    region: frankfurt
-  - name: widget-db
-    databaseName: widget_db
-    user: widget_user
-    plan: free
-    region: frankfurt
   - name: atheer-db
     databaseName: atheer_agent
     user: atheer_user
