@@ -28,10 +28,10 @@ export async function initializeModules(app: FastifyInstance): Promise<ModuleReg
 
   // Create all module instances
   const modules: ModuleRegistry = {
-    auth: createAuthModule(context),
-    tenant: createTenantModule(context),
-    partner: createPartnerModule(context),
-    bot: createBotModule(context),
+    auth: createAuthModule(context) as any,
+    tenant: createTenantModule(context) as any,
+    partner: createPartnerModule(context) as any,
+    bot: createBotModule(context) as any,
   };
 
   // Attach to Fastify instance for route access

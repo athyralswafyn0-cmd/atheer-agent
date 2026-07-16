@@ -1,8 +1,10 @@
 import { fetch } from 'undici';
+import { jwtVerify, SignJWT } from 'jose';
 
 // This is a proxy module that forwards all calls to the auth-service
 export function createAuthModule(context: any) {
   const authServiceURL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+  const jwtSecret = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-change-in-production');
 
   return {
     // ============================================
@@ -16,7 +18,7 @@ export function createAuthModule(context: any) {
         body: JSON.stringify(input),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Registration failed');
       }
       return response.json();
@@ -29,7 +31,7 @@ export function createAuthModule(context: any) {
         body: JSON.stringify(input),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Login failed');
       }
       return response.json();
@@ -42,29 +44,20 @@ export function createAuthModule(context: any) {
         body: JSON.stringify({ refreshToken }),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Token refresh failed');
       }
       return response.json();
     },
 
     async logout(userId: string) {
-      // We assume the auth-service handles logout via token invalidation or we just call the endpoint
       const response = await fetch(`${authServiceURL}/api/v1/auth/logout`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // We need to pass the userId? Actually, the auth-service might use the token from the cookie or header.
-          // For now, we assume the auth-service uses the Authorization header from the original request.
-          // But since we are making a server-to-server call, we don't have the user's token.
-          // We need to rethink: the logout endpoint in the auth-service currently requires authentication.
-          // We can change it to accept a userId and invalidate all sessions for that user, or we can pass the refresh token.
-          // For simplicity, we'll skip the logout for now and just return success.
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Logout failed');
       }
       return response.json();
@@ -81,7 +74,7 @@ export function createAuthModule(context: any) {
         body: JSON.stringify({ email }),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Password reset request failed');
       }
       return response.json();
@@ -94,24 +87,13 @@ export function createAuthModule(context: any) {
         body: JSON.stringify({ token, password: newPassword }),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Password reset failed');
       }
       return response.json();
     },
 
     async changePassword(userId: string, currentPassword: string, newPassword: string) {
-      // We need to authenticate the user first? Actually, the change-password endpoint in the auth-service requires authentication.
-      // We can't use the userId directly because we don't have the user's token.
-      // We have two options:
-      // 1. Change the auth-service to have an admin endpoint for changing password by userId (not secure)
-      // 2. Have the user login first to get a token, then use that token to change the password.
-      // Since we are in a service-to-service call, we don't have the user's password.
-      // We'll skip this for now and note that we need to implement a secure way.
-      // For now, we'll just call the endpoint and hope the auth-service has an internal endpoint or we change the design.
-      // Let's assume we have an internal endpoint that accepts userId and the passwords.
-      // We'll change the auth-service later to have an admin endpoint protected by a service token.
-      // For now, we'll throw an error.
       throw new Error('Change password via service-to-service not implemented');
     },
 
@@ -136,9 +118,10 @@ export function createAuthModule(context: any) {
     // ============================================
 
     async getOAuthUrl(provider: 'google' | 'github', redirectUri: string) {
-      const response = await fetch(`${authServiceURL}/api/v1/auth/oauth/${provider}?redirectUri=${encodeURIComponent(redirectUri)}`);
+      const url = authServiceURL + '/api/v1/auth/oauth/' + provider + '?redirectUri=' + encodeURIComponent(redirectUri);
+      const response = await fetch(url);
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Failed to get OAuth URL');
       }
       return response.json();
@@ -151,7 +134,7 @@ export function createAuthModule(context: any) {
         body: JSON.stringify({ code }),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'OAuth callback failed');
       }
       return response.json();
@@ -182,12 +165,13 @@ export function createAuthModule(context: any) {
     // ============================================
 
     async getUserSessions(userId: string) {
-      const response = await fetch(`${authServiceURL}/api/v1/auth/sessions?userId=${userId}`, {
+      const url = authServiceURL + '/api/v1/auth/sessions?userId=' + userId;
+      const response = await fetch(url, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Failed to get sessions');
       }
       return response.json();
@@ -200,7 +184,7 @@ export function createAuthModule(context: any) {
         body: JSON.stringify({ userId }),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Failed to revoke session');
       }
       return response.json();
@@ -213,7 +197,7 @@ export function createAuthModule(context: any) {
         body: JSON.stringify({ userId }),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json() as any;
         throw new Error(error.error || 'Failed to revoke all sessions');
       }
       return response.json();
@@ -224,13 +208,9 @@ export function createAuthModule(context: any) {
     // ============================================
 
     async validateToken(token: string) {
-      // We can verify the token by calling the auth-service's introspection endpoint or by verifying the JWT ourselves.
-      // Since we have the JWT secret, we can verify it locally. But to be consistent, we'll call an endpoint.
-      // However, the auth-service doesn't have a token validation endpoint. We can use the same secret to verify.
-      // Let's do it locally for now.
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-        return decoded as any;
+        const { payload } = await jwtVerify(token, jwtSecret);
+        return payload as any;
       } catch {
         return null;
       }
@@ -238,14 +218,21 @@ export function createAuthModule(context: any) {
 
     verifyToken(token: string) {
       try {
-        return jwt.verify(token, process.env.JWT_SECRET!);
+        // This is sync - we need to use a different approach
+        // For now, throw an error directing to use validateToken
+        throw new Error('Use validateToken async method instead');
       } catch {
         throw new Error('Invalid token');
       }
     },
 
-    signToken(payload: any) {
-      return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    async signToken(payload: any) {
+      const token = await new SignJWT(payload)
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime('7d')
+        .sign(jwtSecret);
+      return token;
     },
   };
 }

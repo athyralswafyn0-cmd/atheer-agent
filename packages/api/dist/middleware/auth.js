@@ -47,13 +47,8 @@ export const authMiddleware = (app) => {
             };
         }
         catch (err) {
-            if (err.name === 'JsonWebTokenError') {
-                return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Invalid token' });
-            }
-            if (err.name === 'TokenExpiredError') {
-                return reply.code(401).send({ error: 'TOKEN_EXPIRED', message: 'Token has expired' });
-            }
-            return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Authentication failed' });
+            console.error('[AUTH MIDDLEWARE] Error:', err);
+            return reply.code(401).send({ error: 'UNAUTHORIZED', message: err.message });
         }
     });
     console.log('[AUTH MIDDLEWARE] Registered - using custom authenticate hook');

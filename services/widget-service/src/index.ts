@@ -1,31 +1,29 @@
 import { PrismaClient } from '@prisma/client';
-import { FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 const prisma = new PrismaClient();
 
-async function buildApp() {
-  const app = Fastify({ logger: true });
+async function buildApp(): Promise<FastifyInstance> {
+  const app: FastifyInstance = Fastify({ logger: true });
 
-  app.register(require('@fastify/cors'), { origin: true });
-  app.register(require('@fastify/helmet'));
-  app.register(require('@fastify/rate-limit'), { max: 100 });
-  app.register(require('@fastify/jwt'), { secret: process.env.JWT_SECRET });
+  app.register((await import('@fastify/cors')).default, { origin: true });
+  app.register((await import('@fastify/helmet')).default);
+  app.register((await import('@fastify/rate-limit')).default, { max: 100 });
+  app.register((await import('@fastify/jwt')).default, { secret: process.env.JWT_SECRET || 'default-secret' });
 
-  app.get('/health', async (request, reply) => {
+  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
     return { status: 'ok' };
   });
 
   return app;
 }
 
-// Export a function that returns the app instance (for use in tests or direct call)
-const app = buildApp();
+const appPromise = buildApp();
 
-// If this file is run directly, start the server
 if (require.main === module) {
-  app.then(app => {
-    const port = process.env.PORT || 3000;
-    app.listen({ host: '0.0.0.0', port }, (err, address) => {
+  appPromise.then(app => {
+    const port = process.env.PORT || 3006;
+    app.listen({ host: '0.0.0.0', port: Number(port) }, (err: Error | null, address: string) => {
       if (err) {
         app.log.error(err);
         process.exit(1);
@@ -35,4 +33,4 @@ if (require.main === module) {
   });
 }
 
-export { app };
+export { appPromise as app };

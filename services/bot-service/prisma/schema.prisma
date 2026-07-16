@@ -4,5 +4,22 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  output          = "../node_modules/.prisma/client"
+}
+
+model Bot {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  avatar      String?
+  orgId       String
+  partnerId   String?
+  config      Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([partnerId])
 }

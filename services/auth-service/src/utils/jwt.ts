@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 
 export interface JWTPayload {
   userId: string;
@@ -17,23 +17,23 @@ export interface RefreshTokenPayload {
   exp?: number;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
+const JWT_SECRET: string = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d';
+const REFRESH_TOKEN_EXPIRES_IN: string = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
 
 export function signAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp' | 'iss'>): string {
   return jwt.sign(
     { ...payload, iss: 'atheer-agent' },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    JWT_SECRET as any,
+    { expiresIn: JWT_EXPIRES_IN as any }
   );
 }
 
 export function signRefreshToken(userId: string): string {
   return jwt.sign(
     { userId, type: 'refresh' },
-    JWT_SECRET,
-    { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
+    JWT_SECRET as any,
+    { expiresIn: REFRESH_TOKEN_EXPIRES_IN as any }
   );
 }
 

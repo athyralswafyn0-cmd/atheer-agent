@@ -1,8 +1,3 @@
-import { PrismaClient } from '@prisma/client';
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
-
 // Define module interfaces (single source of truth)
 export interface TenantModuleInterface {
   // Core CRUD operations
@@ -17,7 +12,7 @@ export interface TenantModuleInterface {
   removeMember(userId: string, orgId: string): Promise<void>;
 
   // Brand management
-  createBrand(input: BrandInput): Promise<Brand>;
+  createBrand(input: BrandInput & { orgId: string }): Promise<Brand>;
   getBrand(orgId: string, domain: string): Promise<Brand | null>;
   updateBrand(orgId: string, domain: string, input: Partial<BrandInput>): Promise<Brand>;
   deleteBrand(orgId: string, domain: string): Promise<void>;
@@ -72,13 +67,15 @@ export interface UpdateOrganizationInput {
   firebaseConfig?: any;
 }
 
-export interface CreateOrganizationInput extends Organization {}
-
-export interface OrganizationMember {
+// CreateOrganizationInput without the Prisma-only fields (id, membership are auto-generated)
+export interface CreateOrganizationInput {
+  name: string;
   userId: string;
-  organizationId: string;
-  role: string;
-  createdAt: Date;
+  logo?: string | null;
+  primaryDomain?: string | null;
+  customDomains?: string[] | null;
+  stripeAccount?: string | null;
+  firebaseConfig?: any;
 }
 
 export interface Brand {
@@ -90,6 +87,8 @@ export interface Brand {
 }
 
 // Validation schemas
+import { z } from 'zod';
+
 export const BrandInputSchema = z.object({
   customDomain: z.string().min(1).optional(),
   logo: z.string().url().optional(),
@@ -122,5 +121,3 @@ export const CreateOrganizationSchema = z.object({
   stripeAccount: z.string().optional(),
   firebaseConfig: z.any().optional(),
 });
-
-export type { BrandInput };

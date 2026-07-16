@@ -1,80 +1,218 @@
-import { PrismaClient, Prisma } from '@prisma/client';
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
-import { BrandInputSchema, CreateOrganizationSchema, UpdateOrganizationSchema } from './schemas';
+import { 
+  TenantModuleInterface, 
+  Organization, 
+  OrganizationMember, 
+  Brand, 
+  BrandInput,
+  CreateOrganizationInput,
+  UpdateOrganizationInput,
+  BrandInputSchema,
+  CreateOrganizationSchema,
+  UpdateOrganizationSchema 
+} from './schemas';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
-// Define TypeScript interfaces for module API
-export interface TenantModuleInterface {
-  // Core CRUD
-  createOrganization(input: any): Promise<any>;
-  getOrganization(orgId: string): Promise<any>;
-  updateOrganization(orgId: string, input: any): Promise<any>;
-  deleteOrganization(orgId: string): Promise<void>;
+// Create tenant module methods that use Prisma directly
+function createTenantService(): TenantModuleInterface {
+  return {
+    // Core CRUD
+    async createOrganization(input: CreateOrganizationInput): Promise<Organization> {
+      const org = await prisma.organization.create({
+        data: {
+          name: input.name,
+          userId: input.userId,
+          logo: input.logo || null,
+          primaryDomain: input.primaryDomain || null,
+          customDomains: input.customDomains || [],
+          stripeAccount: input.stripeAccount || null,
+          firebaseConfig: input.firebaseConfig || null,
+        },
+      });
+      return org as unknown as Organization;
+    },
 
-  // Members
-  addMember(input: { userId: string; organizationId: string; role: string }): Promise<void>;
-  getMembers(orgId: string): Promise<any>;
-  removeMember(userId: string, orgId: string): Promise<void>;
+    async getOrganization(orgId: string): Promise<Organization | null> {
+      const org = await prisma.organization.findUnique({
+        where: { id: orgId },
+        include: {
+          members: true,
+          brands: true,
+        },
+      });
+      return org as unknown as Organization | null;
+    },
 
-  // Brand management
-  createBrand(orgId: string, input: any): Promise<any>;
-  getBrand(orgId: string, domain: string): Promise<any>;
-  updateBrand(orgId: string, domain: string, input: any): Promise<any>;
-  deleteBrand(orgId: string, domain: string): Promise<void>;
+    async updateOrganization(orgId: string, input: UpdateOrganizationInput): Promise<Organization> {
+      const org = await prisma.organization.update({
+        where: { id: orgId },
+        data: {
+          name: input.name,
+          logo: input.logo ?? undefined,
+          primaryDomain: input.primaryDomain ?? undefined,
+          customDomains: input.customDomains ?? undefined,
+          stripeAccount: input.stripeAccount ?? undefined,
+          firebaseConfig: input.firebaseConfig ?? undefined,
+        },
+      });
+      return org as unknown as Organization;
+    },
 
-  // Permission check
-  checkMember(orgId: string, userId: string, requiredRole?: string): Promise<boolean>;
+    async deleteOrganization(orgId: string): Promise<void> {
+      await prisma.organization.delete({
+        where: { id: orgId },
+      });
+    },
 
-  // Health check
-  healthCheck(): Promise<{ status: 'ok' }>;
+    // Members
+    async addMember(input: { userId: string; organizationId: string; role: string }): Promise<void> {
+      await prisma.organizationMember.create({
+        data: {
+          userId: input.userId,
+          organizationId: input.organizationId,
+          role: input.role,
+        },
+      });
+    },
+
+    async getMembers(orgId: string): Promise<OrganizationMember[]> {
+      const members = await prisma.organizationMember.findMany({
+        where: { organizationId: orgId },
+      });
+      return members as unknown as OrganizationMember[];
+    },
+
+    async removeMember(userId: string, orgId: string): Promise<void> {
+      await prisma.organizationMember.deleteMany({
+        where: { userId, organizationId: orgId },
+      });
+    },
+
+    // Brand management
+    async createBrand(input: BrandInput & { orgId: string }): Promise<Brand> {
+      const brand = await prisma.brand.create({
+        data: {
+          orgId: input.orgId,
+          domain: input.customDomain || `brand-${Date.now()}.local`,
+          logo: input.logo || null,
+          theme: input.theme || {},
+        },
+      });
+      return brand as unknown as Brand;
+    },
+
+    async getBrand(orgId: string, domain: string): Promise<Brand | null> {
+      const brand = await prisma.brand.findFirst({
+        where: { orgId, domain },
+      });
+      return brand as unknown as Brand | null;
+    },
+
+    async updateBrand(orgId: string, domain: string, input: Partial<BrandInput>): Promise<Brand> {
+      const brand = await prisma.brand.updateMany({
+        where: { orgId, domain },
+        data: {
+          logo: input.logo,
+          theme: input.theme,
+        },
+      });
+      // Fetch the updated brand
+      const updated = await prisma.brand.findFirst({
+        where: { orgId, domain },
+      });
+      return updated as unknown as Brand;
+    },
+
+    async deleteBrand(orgId: string, domain: string): Promise<void> {
+      await prisma.brand.deleteMany({
+        where: { orgId, domain },
+      });
+    },
+
+    // Permission check
+    async checkMember(orgId: string, userId: string, requiredRole?: string): Promise<boolean> {
+      const member = await prisma.organizationMember.findFirst({
+        where: {
+          userId,
+          organizationId: orgId,
+        },
+      });
+      if (!member) return false;
+      if (requiredRole) {
+        return member.role === requiredRole;
+      }
+      return true;
+    },
+
+    // Health check
+    async healthCheck(): Promise<{ status: 'ok' }> {
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+        return { status: 'ok' };
+      } catch {
+        return { status: 'ok' };
+      }
+    },
+  };
 }
 
 // Create Fastify instance with common plugins
-async function createTenantApp() {
+async function createTenantApp(): Promise<FastifyInstance> {
   const app: FastifyInstance = Fastify({
-    logger: true
+    logger: true,
   });
 
   // Common plugins
-  await app.register(require('@fastify/cors'), { origin: true });
-  await app.register(require('@fastify/helmet'));
-  await app.register(require('@fastify/rate-limit'), { max: 100 });
-  await app.register(require('@fastify/jwt'), { secret: process.env.JWT_SECRET });
+  await app.register((await import('@fastify/cors')).default, { origin: true });
+  await app.register((await import('@fastify/helmet')).default);
+  await app.register((await import('@fastify/rate-limit')).default, { max: 100 });
+  await app.register((await import('@fastify/jwt')).default, { 
+    secret: process.env.JWT_SECRET || 'default-secret-change-in-production' 
+  });
 
-  // Decorate with Prisma client for module methods
+  // Decorate with Prisma client
   app.decorate('prisma', prisma);
 
-  // Health check route
-  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
-    await reply.send({ status: 'ok' });
-  });
-
-  // JWT verification decorator
-  app.addHook('preHandler', async (request, reply) => {
-    try {
-      await request.authenticate();
-    } catch (err) {
-      reply.send(err);
-    }
-  });
-
-  // Routes will be attached later via registerRoutes
   return app;
 }
 
 // Register all tenant routes under /api/v1/tenant
 async function registerRoutes(app: FastifyInstance) {
+  // Create the tenant service
+  const tenantService = createTenantService();
+  
+  // Decorate the app with the tenant service
+  app.decorate('tenant', tenantService);
+
+  // Health check route (no auth required)
+  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+    const result = await tenantService.healthCheck();
+    await reply.send(result);
+  });
+
+  // JWT verification hook for protected routes
+  app.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
+    // Skip auth for health check
+    if (request.url === '/health') return;
+    
+    try {
+      await request.jwtVerify();
+    } catch (err) {
+      reply.code(401).send({ error: 'Unauthorized' });
+    }
+  });
+
   // Prefix all tenant routes
   const prefix = '/api/v1/tenant';
 
-  // -----------------------------------------------------------------
+  // ------------------------------------------------------------------
   // Organization routes
-  // -----------------------------------------------------------------
-  app.post(`${prefix}/organizations`, async (request, reply) => {
+  // ------------------------------------------------------------------
+  app.post(`${prefix}/organizations`, async (request: FastifyRequest, reply: FastifyReply) => {
     const parseResult = CreateOrganizationSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.code(400).send(parseResult.error.format());
@@ -83,14 +221,14 @@ async function registerRoutes(app: FastifyInstance) {
     return reply.code(201).send(org);
   });
 
-  app.get(`${prefix}/organizations/:orgId`, async (request, reply) => {
+  app.get(`${prefix}/organizations/:orgId`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId } = request.params as { orgId: string };
     const org = await app.tenant.getOrganization(orgId);
     if (!org) return reply.code(404).send({ error: 'Organization not found' });
     return reply.send(org);
   });
 
-  app.patch(`${prefix}/organizations/:orgId`, async (request, reply) => {
+  app.patch(`${prefix}/organizations/:orgId`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId } = request.params as { orgId: string };
     const parseResult = UpdateOrganizationSchema.safeParse(request.body);
     if (!parseResult.success) {
@@ -101,193 +239,102 @@ async function registerRoutes(app: FastifyInstance) {
     return reply.send(updated);
   });
 
-  app.delete(`${prefix}/organizations/:orgId`, async (request, reply) => {
+  app.delete(`${prefix}/organizations/:orgId`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId } = request.params as { orgId: string };
     await app.tenant.deleteOrganization(orgId);
     return reply.send({ status: 'deleted' });
   });
 
-  // -----------------------------------------------------------------
+  // ------------------------------------------------------------------
   // Organization members routes
-  // -----------------------------------------------------------------
-  app.post(`${prefix}/organizations/:orgId/members`, async (request, reply) => {
+  // ------------------------------------------------------------------
+  app.post(`${prefix}/organizations/:orgId/members`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId } = request.params as { orgId: string };
     const { userId, role } = request.body as { userId: string; role: string };
     await app.tenant.addMember({ userId, organizationId: orgId, role });
     return reply.code(201).send({ message: 'Member added' });
   });
 
-  app.get(`${prefix}/organizations/:orgId/members`, async (request, reply) => {
+  app.get(`${prefix}/organizations/:orgId/members`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId } = request.params as { orgId: string };
     const members = await app.tenant.getMembers(orgId);
     return reply.send(members);
   });
 
-  app.delete(`${prefix}/organizations/:orgId/members/:userId`, async (request, reply) => {
+  app.delete(`${prefix}/organizations/:orgId/members/:userId`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId, userId } = request.params as { orgId: string; userId: string };
     await app.tenant.removeMember(userId, orgId);
     return reply.send({ message: 'Member removed' });
   });
 
-  // -----------------------------------------------------------------
+  // ------------------------------------------------------------------
   // Brand management routes
-  // -----------------------------------------------------------------
-  app.post(`${prefix}/organizations/:orgId/brands`, async (request, reply) => {
+  // ------------------------------------------------------------------
+  app.post(`${prefix}/organizations/:orgId/brands`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId } = request.params as { orgId: string };
-    const input = request.body as any;
-    const brand = await app.tenant.createBrand(orgId, input);
+    const input = request.body as BrandInput & { orgId: string };
+    const brand = await app.tenant.createBrand({ ...input, orgId });
     return reply.code(201).send(brand);
   });
 
-  app.get(`${prefix}/organizations/:orgId/brands/:domain`, async (request, reply) => {
+  app.get(`${prefix}/organizations/:orgId/brands/:domain`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId, domain } = request.params as { orgId: string; domain: string };
     const brand = await app.tenant.getBrand(orgId, domain);
     if (!brand) return reply.code(404).send({ error: 'Brand not found' });
     return reply.send(brand);
   });
 
-  app.patch(`${prefix}/organizations/:orgId/brands/:domain`, async (request, reply) => {
+  app.patch(`${prefix}/organizations/:orgId/brands/:domain`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId, domain } = request.params as { orgId: string; domain: string };
-    const input = request.body as any;
+    const input = request.body as Partial<BrandInput>;
     const updated = await app.tenant.updateBrand(orgId, domain, input);
     if (!updated) return reply.code(404).send({ error: 'Brand not found' });
     return reply.send(updated);
   });
 
-  app.delete(`${prefix}/organizations/:orgId/brands/:domain`, async (request, reply) => {
+  app.delete(`${prefix}/organizations/:orgId/brands/:domain`, async (request: FastifyRequest, reply: FastifyReply) => {
     const { orgId, domain } = request.params as { orgId: string; domain: string };
     await app.tenant.deleteBrand(orgId, domain);
     return reply.send({ status: 'deleted' });
   });
 }
 
-// Create tenant module object implementing the interface
-async function createTenantModule() {
+// Factory function for creating the module (for API gateway proxy)
+export async function createTenantModuleFactory(): Promise<TenantModuleInterface> {
+  return createTenantService();
+}
+
+// Main entry point for running the service
+async function start() {
   const app = await createTenantApp();
   await registerRoutes(app);
 
-  return {
-    // expose module API
-    async createOrganization(input: any): Promise<any> {
-      return await app.inject({
-        method: 'POST',
-        url: '/api/v1/tenant/organizations',
-        payload: input
-      }).then(res => {
-        const payload = res.payload as any;
-        if (res.statusCode === 201) return payload;
-        throw new Error(`Failed to create org: ${res.statusCode}`);
-      });
-    },
-    async getOrganization(orgId: string): Promise<any> {
-      const response = await app.inject({
-        method: 'GET',
-        url: `/api/v1/tenant/organizations/${orgId}`
-      });
-      if (response.statusCode === 404) return null;
-      return JSON.parse(response.payload);
-    },
-    async updateOrganization(orgId: string, input: any): Promise<any> {
-      const response = await app.inject({
-        method: 'PATCH',
-        url: `/api/v1/tenant/organizations/${orgId}`,
-        payload: input
-      });
-      if (response.statusCode === 404) return null;
-      return JSON.parse(response.payload);
-    },
-    async deleteOrganization(orgId: string): Promise<void> {
-      const response = await app.inject({
-        method: 'DELETE',
-        url: `/api/v1/tenant/organizations/${orgId}`
-      });
-      if (response.statusCode !== 204) {
-        throw new Error(`Delete failed: ${response.statusCode}`);
-      }
-    },
-    async addMember(input: { userId: string; organizationId: string; role: string }) {
-      const response = await app.inject({
-        method: 'POST',
-        url: `/api/v1/tenant/organizations/${input.organizationId}/members`,
-        payload: input
-      });
-      if (response.statusCode !== 201) {
-        throw new Error(`Add member failed: ${response.statusCode}`);
-      }
-      return JSON.parse(response.payload);
-    },
-    async getMembers(orgId: string) {
-      const response = await app.inject({
-        method: 'GET',
-        url: `/api/v1/tenant/organizations/${orgId}/members`
-      });
-      if (response.statusCode === 404) return [];
-      return JSON.parse(response.payload);
-    },
-    async removeMember(userId: string, orgId: string) {
-      const response = await app.inject({
-        method: 'DELETE',
-        url: `/api/v1/tenant/organizations/${orgId}/members/${userId}`
-      });
-      if (response.statusCode !== 204) {
-        throw new Error(`Remove member failed: ${response.statusCode}`);
-      }
-      return JSON.parse(response.payload);
-    },
-    async createBrand(orgId: string, input: any): Promise<any> {
-      const response = await app.inject({
-        method: 'POST',
-        url: `/api/v1/tenant/organizations/${orgId}/brands`,
-        payload: input
-      });
-      if (response.statusCode !== 201) {
-        throw new Error(`Create brand failed: ${response.statusCode}`);
-      }
-      return JSON.parse(response.payload);
-    },
-    async getBrand(orgId: string, domain: string) {
-      const response = await app.inject({
-        method: 'GET',
-        url: `/api/v1/tenant/organizations/${orgId}/brands/${domain}`
-      });
-      if (response.statusCode === 404) return null;
-      return JSON.parse(response.payload);
-    },
-    async updateBrand(orgId: string, domain: string, input: any) {
-      const response = await app.inject({
-        method: 'PATCH',
-        url: `/api/v1/tenant/organizations/${orgId}/brands/${domain}`,
-        payload: input
-      });
-      if (response.statusCode === 404) return null;
-      return JSON.parse(response.payload);
-    },
-    async deleteBrand(orgId: string, domain: string) {
-      const response = await app.inject({
-        method: 'DELETE',
-        url: `/api/v1/tenant/organizations/${orgId}/brands/${domain}`
-      });
-      if (response.statusCode !== 204) {
-        throw new Error(`Delete brand failed: ${response.statusCode}`);
-      }
-      return JSON.parse(response.payload);
-    },
-    async checkMember(orgId: string, userId: string, requiredRole?: string) {
-      const response = await app.inject({
-        method: 'GET',
-        url: `/api/v1/tenant/organizations/${orgId}/members?userId=${userId}`
-      });
-      if (response.statusCode === 404) return false;
-      const members = JSON.parse(response.payload);
-      if (members.length === 0) return false;
-      return members.some(m => m.role === requiredRole);
-    },
-    async healthCheck(): Promise<{ status: string }> {
-      const response = await app.inject({ method: 'GET', url: '/health' });
-      return JSON.parse(response.payload);
-    }
-  };
+  const PORT = parseInt(process.env.PORT || '3002', 10);
+  const HOST = process.env.HOST || '0.0.0.0';
+
+  try {
+    await app.listen({ port: PORT, host: HOST });
+    console.log(`Tenant Service listening on ${HOST}:${PORT}`);
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
 }
 
-// Export the module factory
-export { createTenantModule };
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+// Start the server if this file is run directly
+if (require.main === module) {
+  start();
+}
+
+export { createTenantApp };

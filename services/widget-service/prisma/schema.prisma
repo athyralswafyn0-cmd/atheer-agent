@@ -4,5 +4,23 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  output          = "../node_modules/.prisma/client"
+}
+
+model Widget {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  code        String   @unique
+  config      Json?
+  isActive    Boolean  @default(true)
+  orgId       String
+  botId       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([botId])
+  @@index([code])
 }

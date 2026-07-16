@@ -4,7 +4,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  output          = "../node_modules/.prisma/client"
 }
 
 model Partner {
@@ -18,9 +19,8 @@ model Partner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  brand         Brand?         @relation("PartnerBrand", fields: [brandId], references: [id])
-  license       License?       @relation("PartnerLicense", fields: [licenseId], references: [id])
-  organizations Organization[] @relation("OrganizationPartners")
+  brand         Brand?   @relation("PartnerBrand")
+  license       License? @relation("PartnerLicense")
 
   @@index([email])
 }
@@ -42,7 +42,6 @@ model License {
   updatedAt            DateTime      @updatedAt
 
   partner              Partner       @relation("PartnerLicense", fields: [partnerId], references: [id])
-  organization         Organization? @relation("LicenseOrganization", fields: [id], references: [id])
 
   @@index([partnerId])
   @@index([status])
@@ -72,7 +71,6 @@ model Brand {
   updatedAt       DateTime      @updatedAt
 
   partner         Partner?      @relation("PartnerBrand", fields: [partnerId], references: [id])
-  organization    Organization? @relation("BrandOrganization", fields: [organizationId], references: [id])
 
   @@index([partnerId])
   @@index([organizationId])

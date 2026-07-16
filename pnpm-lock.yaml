@@ -1074,6 +1074,9 @@ importers:
       ioredis:
         specifier: ^5.11.1
         version: 5.11.1(supports-color@7.2.0)
+      jose:
+        specifier: ^6.2.3
+        version: 6.2.3
       jsonwebtoken:
         specifier: ^9.0.0
         version: 9.0.3
@@ -1098,6 +1101,9 @@ importers:
       redis:
         specifier: ^6.1.0
         version: 6.1.0(@opentelemetry/api@1.9.1)
+      undici:
+        specifier: ^8.7.0
+        version: 8.7.0
       zod:
         specifier: ^3.0.0
         version: 3.25.76
@@ -5810,6 +5816,10 @@ packages:
   undici@7.28.0:
     resolution: {integrity: sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA==}
     engines: {node: '>=20.18.1'}
+
+  undici@8.7.0:
+    resolution: {integrity: sha512-N7iQtfyLhIMOFgQubvmLV26svHpO0bqKnAiWotTQCVKCmWrcGbBotPuW1x+xwYZ2VHdSTVUfPQQnlEt1/LouTQ==}
+    engines: {node: '>=22.19.0'}
 
   unrs-resolver@1.12.2:
     resolution: {integrity: sha512-dmlRxBJJayXjqTwC+JtF1HhJmgf3ftQ3YejFcZrf4+KKtJv0qDsK1pjqaaVjG7wJ5NJ6UVP1OqRMQ71Z4C3rxQ==}
@@ -10822,6 +10832,8 @@ snapshots:
     optional: true
 
   undici@7.28.0: {}
+
+  undici@8.7.0: {}
 
   unrs-resolver@1.12.2:
     dependencies:
