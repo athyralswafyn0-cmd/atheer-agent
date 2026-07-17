@@ -1045,11 +1045,16 @@ app.setErrorHandler(errorHandler);
 // Start server
 const start = async () => {
   try {
+    console.log('[BOOT] Starting server...');
+    console.log(`[BOOT] Config: HOST=${config.HOST}, PORT=${config.PORT}`);
     await app.ready();
+    console.log('[BOOT] App ready, starting listener...');
     await app.listen({ port: config.PORT, host: config.HOST });
-    console.log(`Server running on http://${config.HOST}:${config.PORT}`);
+    console.log(`[BOOT] Server running on http://${config.HOST}:${config.PORT}`);
+    console.log('[BOOT] Health endpoint: /health');
   } catch (err: unknown) {
-    app.log.error(err instanceof Error ? err.message : String(err));
+    console.error('[BOOT] FATAL ERROR:', err instanceof Error ? err.message : String(err));
+    console.error('[BOOT] Stack:', err instanceof Error ? err.stack : 'no stack');
     process.exit(1);
   }
 };
