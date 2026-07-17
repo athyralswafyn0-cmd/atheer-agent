@@ -10,14 +10,13 @@ app.get('/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
-const start = async () => {
-  try {
-    await app.listen({ port: config.PORT, host: config.HOST });
-    console.log(`Server listening on ${config.HOST}:${config.PORT}`);
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
+app.listen(
+  { port: config.PORT, host: config.HOST },
+  (err, address) => {
+    if (err) {
+      console.error('Failed to start server:', err);
+      process.exit(1);
+    }
+    console.log(`Server listening on ${address}`);
   }
-};
-
-start();
+);
