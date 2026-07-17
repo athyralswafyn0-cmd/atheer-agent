@@ -287,11 +287,17 @@ app.setErrorHandler(errorHandler);
 
 const start = async () => {
   try {
+    console.log('[BOOT] Starting server...');
+    console.log(`[BOOT] Config: HOST=${config.HOST}, PORT=${config.PORT}`);
+    console.log(`[BOOT] DATABASE_URL present: ${!!config.DATABASE_URL}`);
     await app.ready();
+    console.log('[BOOT] App ready, starting listener...');
     await app.listen({ port: config.PORT, host: config.HOST });
-    console.log(`Server running on http://${config.HOST}:${config.PORT}`);
+    console.log(`[BOOT] Server running on http://${config.HOST}:${config.PORT}`);
+    console.log('[BOOT] Health endpoint: /health');
   } catch (err) {
-    app.log.error(err);
+    console.error('[BOOT] FATAL ERROR:', err instanceof Error ? err.message : String(err));
+    console.error('[BOOT] Stack:', err instanceof Error ? err.stack : 'no stack');
     process.exit(1);
   }
 };
