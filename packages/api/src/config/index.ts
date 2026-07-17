@@ -15,6 +15,8 @@ export const config = {
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
   RATE_LIMIT_WINDOW: process.env.RATE_LIMIT_WINDOW || '1 minute',
 
+  BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
+
   // OpenAI (fallback)
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini',
