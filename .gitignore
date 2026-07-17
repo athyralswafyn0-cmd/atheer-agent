@@ -67,3 +67,4 @@ coverage/
 .turboC:/Users/user/Downloads/Portfolio_Projects/.env
 *.env
 packages/api/.env
+packages/api/.env.production
