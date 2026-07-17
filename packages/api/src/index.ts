@@ -63,7 +63,9 @@ app.decorate('config', config);
 authMiddleware(app);
 
 // Initialize Modular Monolith modules (Stage 2)
+console.log('[BOOT] Initializing modules...');
 await initializeModules(app);
+console.log('[BOOT] Modules initialized');
 
 // Register routes
 app.register(healthRoutes);
