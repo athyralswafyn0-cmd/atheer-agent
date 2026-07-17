@@ -7,7 +7,7 @@ const app = Fastify({ logger: true });
 app.decorate('prisma', new PrismaClient());
 
 app.get('/health', async () => {
-  return { status: 'ok' };
+  return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
 const start = async () => {
